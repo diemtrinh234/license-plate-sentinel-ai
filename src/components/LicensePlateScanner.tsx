@@ -1,11 +1,22 @@
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Camera, Check } from "lucide-react";
+import { Loader2, Camera, Check, Upload, ImageIcon } from "lucide-react";
 
 interface LicensePlateScannerProps {
   onDetectPlate: (plate: string) => void;
+}
+
+// Định nghĩa kiểu dữ liệu cho trạng thái của xe
+interface Vehicle {
+  id: number;
+  plate: string;
+  time: string;
+  date: string;
+  location: string;
+  type: string;
+  status: "violation" | "normal";
 }
 
 // Danh sách biển số xe mẫu để mô phỏng
@@ -23,8 +34,54 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
 
-  // Mô phỏng quá trình quét biển số xe
+  // Xử lý khi tải ảnh lên
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Kiểm tra xem file có phải là ảnh không
+      if (!file.type.startsWith('image/')) {
+        alert('Vui lòng tải lên một file ảnh');
+        return;
+      }
+
+      // Chuyển đổi file thành URL để hiển thị
+      const imageUrl = URL.createObjectURL(file);
+      setUploadedImage(imageUrl);
+      setCameraActive(false); // Tắt camera nếu đang bật
+    }
+  };
+
+  // Mô phỏng quét biển số từ ảnh đã tải lên
+  const scanUploadedImage = () => {
+    if (!uploadedImage) return;
+    
+    setIsScanning(true);
+    setScanResult(null);
+    setConfidence(0);
+    
+    // Mô phỏng quá trình nhận diện
+    const recognitionInterval = setInterval(() => {
+      setConfidence((prev) => Math.min(prev + Math.random() * 20, 99));
+    }, 500);
+    
+    // Sau 3 giây sẽ có kết quả
+    setTimeout(() => {
+      clearInterval(recognitionInterval);
+      setConfidence(100);
+      
+      // Lấy ngẫu nhiên một biển số từ danh sách mẫu
+      const randomPlate = sampleLicensePlates[Math.floor(Math.random() * sampleLicensePlates.length)];
+      setScanResult(randomPlate);
+      setIsScanning(false);
+      
+      // Gọi hàm callback để thêm biển số mới
+      onDetectPlate(randomPlate);
+    }, 3000);
+  };
+
+  // Mô phỏng quá trình quét biển số xe qua camera
   const startScan = () => {
     setIsScanning(true);
     setScanResult(null);
@@ -63,6 +120,7 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
   const toggleCamera = () => {
     if (!cameraActive) {
       setCameraActive(true);
+      setUploadedImage(null); // Xóa ảnh đã tải lên (nếu có)
       
       // Giả lập kết nối camera
       if (videoRef.current) {
@@ -74,6 +132,14 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
       }
     } else {
       setCameraActive(false);
+    }
+  };
+
+  // Xóa ảnh đã tải lên
+  const clearUploadedImage = () => {
+    if (uploadedImage) {
+      URL.revokeObjectURL(uploadedImage);
+      setUploadedImage(null);
     }
   };
 
@@ -99,6 +165,22 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
             <source src="https://assets.mixkit.co/videos/preview/mixkit-traffic-on-a-rainy-night-4221-large.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
+        ) : uploadedImage ? (
+          <div className="w-full h-full flex items-center justify-center relative">
+            <img 
+              src={uploadedImage} 
+              alt="Uploaded license plate" 
+              className="max-w-full max-h-full object-contain" 
+            />
+            <Button 
+              variant="destructive" 
+              size="icon" 
+              className="absolute top-2 right-2 opacity-80 hover:opacity-100"
+              onClick={clearUploadedImage}
+            >
+              ×
+            </Button>
+          </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <div className="text-center">
@@ -136,29 +218,67 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
         <canvas ref={canvasRef} className="hidden"></canvas>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col md:flex-row gap-4">
         <Button 
           onClick={toggleCamera} 
           variant={cameraActive ? "destructive" : "outline"}
           className="flex-1"
+          disabled={isScanning}
         >
           <Camera className="mr-2 h-4 w-4" /> 
           {cameraActive ? "Tắt Camera" : "Bật Camera"}
         </Button>
         
-        <Button 
-          onClick={startScan} 
-          disabled={isScanning || !cameraActive}
-          className="flex-1"
-        >
-          {isScanning ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang quét...
-            </>
-          ) : (
-            <>Quét biển số</>
-          )}
-        </Button>
+        {cameraActive ? (
+          <Button 
+            onClick={startScan} 
+            disabled={isScanning || !cameraActive}
+            className="flex-1"
+          >
+            {isScanning ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang quét...
+              </>
+            ) : (
+              <>Quét biển số</>
+            )}
+          </Button>
+        ) : uploadedImage ? (
+          <Button 
+            onClick={scanUploadedImage} 
+            disabled={isScanning}
+            className="flex-1"
+          >
+            {isScanning ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang phân tích...
+              </>
+            ) : (
+              <>Phân tích ảnh</>
+            )}
+          </Button>
+        ) : (
+          <div className="relative flex-1">
+            <Input
+              type="file"
+              id="license-plate-upload"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              disabled={isScanning}
+            />
+            <Button 
+              variant="outline"
+              className="w-full flex items-center justify-center"
+              disabled={isScanning}
+              asChild
+            >
+              <label htmlFor="license-plate-upload" className="cursor-pointer">
+                <Upload className="mr-2 h-4 w-4" /> Tải ảnh lên
+              </label>
+            </Button>
+          </div>
+        )}
       </div>
       
       <div className="border-t border-border pt-4 mt-4">

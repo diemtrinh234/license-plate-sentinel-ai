@@ -20,8 +20,19 @@ import { DashboardChart } from "@/components/DashboardChart";
 import LicensePlateScanner from "@/components/LicensePlateScanner";
 import { useToast } from "@/hooks/use-toast";
 
+// Định nghĩa kiểu dữ liệu cho trạng thái của xe
+interface Vehicle {
+  id: number;
+  plate: string;
+  time: string;
+  date: string;
+  location: string;
+  type: string;
+  status: "violation" | "normal";
+}
+
 // Dữ liệu mẫu cho biển số xe
-const sampleVehicleData = [
+const sampleVehicleData: Vehicle[] = [
   {
     id: 1,
     plate: "51F-238.91",
@@ -97,7 +108,7 @@ const sampleVehicleData = [
 ];
 
 const Dashboard = () => {
-  const [vehicles, setVehicles] = useState(sampleVehicleData);
+  const [vehicles, setVehicles] = useState<Vehicle[]>(sampleVehicleData);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const { toast } = useToast();
@@ -125,13 +136,13 @@ const Dashboard = () => {
     const violations = ["Vượt đèn đỏ", "Quá tốc độ", "Đỗ sai quy định", "Bình thường"];
     const location = randomLocations[Math.floor(Math.random() * randomLocations.length)];
     const violation = violations[Math.floor(Math.random() * violations.length)];
-    const status = violation !== "Bình thường" ? "violation" : "normal";
+    const status = violation !== "Bình thường" ? "violation" : "normal" as "violation" | "normal";
     
     const now = new Date();
     const time = now.toLocaleTimeString('vi-VN');
     const date = now.toLocaleDateString('vi-VN');
     
-    const newVehicle = {
+    const newVehicle: Vehicle = {
       id: vehicles.length + 1,
       plate: newPlate,
       time,
