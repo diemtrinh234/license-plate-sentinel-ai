@@ -1,70 +1,45 @@
 
-import { useState } from 'react';
+import React from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Navbar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isAuthenticated, user, logout } = useAuth();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <span className="text-xl font-bold text-primary">LicenseSentinel</span>
-            </div>
-          </div>
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-center space-x-4">
-              <a href="#features" className="text-gray-300 hover:text-white px-3 py-2 rounded-md">
-                Tính năng
-              </a>
-              <a href="#how-it-works" className="text-gray-300 hover:text-white px-3 py-2 rounded-md">
-                Cách hoạt động
-              </a>
-              <a href="#dashboard" className="text-gray-300 hover:text-white px-3 py-2 rounded-md">
+    <header className="border-b border-border">
+      <div className="container flex items-center justify-between h-16 px-4 mx-auto">
+        <Link to="/" className="text-2xl font-bold gradient-text">
+          SmartTraffic
+        </Link>
+        
+        <nav className="flex items-center gap-2 md:gap-4">
+          {isAuthenticated ? (
+            <>
+              <Link to="/dashboard" className="hidden md:block text-sm font-medium transition-colors hover:text-primary">
                 Dashboard
-              </a>
-              <a href="#contact" className="text-gray-300 hover:text-white px-3 py-2 rounded-md">
-                Liên hệ
-              </a>
-              <Button variant="default" size="sm">Dùng thử</Button>
-            </div>
-          </div>
-          <div className="md:hidden">
-            <button 
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white focus:outline-none"
-            >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
-        </div>
+              </Link>
+              <div className="hidden md:flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  Xin chào, <span className="font-medium text-foreground">{user?.name}</span>
+                </span>
+                <Button variant="outline" size="sm" onClick={logout}>
+                  Đăng xuất
+                </Button>
+              </div>
+              <Button variant="outline" size="sm" onClick={logout} className="md:hidden">
+                Đăng xuất
+              </Button>
+            </>
+          ) : (
+            <Link to="/auth">
+              <Button size="sm">Đăng nhập</Button>
+            </Link>
+          )}
+        </nav>
       </div>
-      {/* Mobile menu */}
-      {isMenuOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-background border-b border-border">
-            <a href="#features" className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-white">
-              Tính năng
-            </a>
-            <a href="#how-it-works" className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-white">
-              Cách hoạt động
-            </a>
-            <a href="#dashboard" className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-white">
-              Dashboard
-            </a>
-            <a href="#contact" className="block px-3 py-2 text-base font-medium text-gray-300 hover:text-white">
-              Liên hệ
-            </a>
-            <div className="pt-2">
-              <Button className="w-full" variant="default">Dùng thử</Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </nav>
+    </header>
   );
 };
 
