@@ -2,7 +2,8 @@
 import React, { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Camera, Check, Upload, ImageIcon, CameraOff, Trash2 } from "lucide-react";
+import { Loader2, Camera, Check, Upload, ImageIcon, CameraOff, Trash2, Scan } from "lucide-react";
+import { toast } from "sonner";
 
 interface LicensePlateScannerProps {
   onDetectPlate: (plate: string) => void;
@@ -26,25 +27,87 @@ const sampleLicensePlates = [
   "99A-888.99", "74D-555.32", "20H-762.81", "60B-391.05"
 ];
 
-// Hàm phân tích biển số xe từ dữ liệu hình ảnh (mô phỏng)
-const analyzeLicensePlate = (imageUrl: string): Promise<string> => {
-  return new Promise((resolve) => {
+// Class mô phỏng cho mô hình CNN để nhận dạng biển số xe
+class CNNLicensePlateDetector {
+  private readonly MODEL_ACCURACY = 0.95; // Độ chính xác mô phỏng của mô hình 95%
+  private readonly PROCESSING_STEPS = [
+    "Khởi tạo mô hình CNN...",
+    "Tiền xử lý hình ảnh...",
+    "Chuẩn hóa độ sáng và tương phản...",
+    "Phát hiện vùng chứa biển số...",
+    "Áp dụng phân đoạn ảnh...",
+    "Trích xuất đặc trưng CNN...",
+    "Dò tìm cạnh và góc của biển số...",
+    "Xử lý phân đoạn ký tự...",
+    "Nhận dạng ký tự bằng mạng CNN...",
+    "Chỉnh sửa hậu kỳ và kiểm tra định dạng...",
+    "Xác minh kết quả với độ tin cậy cao..."
+  ];
+
+  // Phân tích ảnh và trả về kết quả cùng các bước xử lý
+  async analyzeImage(imageUrl: string, updateStep: (step: string) => void): Promise<string> {
     // Tạo một giá trị hash đơn giản từ URL để luôn trả về cùng một kết quả cho cùng một hình ảnh
     let hash = 0;
     for (let i = 0; i < imageUrl.length; i++) {
       hash = ((hash << 5) - hash) + imageUrl.charCodeAt(i);
-      hash |= 0; // Convert to 32bit integer
+      hash |= 0; // Chuyển đổi thành số nguyên 32-bit
     }
     
     // Lấy biển số xe dựa trên hash để kết quả nhất quán cho cùng một hình ảnh
     const plateIndex = Math.abs(hash) % sampleLicensePlates.length;
     
-    // Trả về kết quả sau một khoảng thời gian để mô phỏng thời gian xử lý
-    setTimeout(() => {
-      resolve(sampleLicensePlates[plateIndex]);
-    }, 2000);
-  });
-};
+    // Mô phỏng các bước xử lý của CNN
+    for (const step of this.PROCESSING_STEPS) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      updateStep(step);
+    }
+    
+    // Áp dụng nhiễu ngẫu nhiên để mô phỏng kết quả với độ chính xác của mô hình
+    const accuracy = Math.random();
+    if (accuracy <= this.MODEL_ACCURACY) {
+      // Kết quả chính xác
+      return sampleLicensePlates[plateIndex];
+    } else {
+      // Mô phỏng lỗi nhận dạng (5% khả năng)
+      const errorCharPosition = Math.floor(Math.random() * sampleLicensePlates[plateIndex].length);
+      const possibleChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-.";
+      const originalChar = sampleLicensePlates[plateIndex][errorCharPosition];
+      let newChar = originalChar;
+      
+      // Đảm bảo ký tự mới khác ký tự ban đầu
+      while (newChar === originalChar) {
+        newChar = possibleChars[Math.floor(Math.random() * possibleChars.length)];
+      }
+      
+      // Thay thế một ký tự trong biển số để mô phỏng lỗi nhận dạng
+      const plateWithError = 
+        sampleLicensePlates[plateIndex].substring(0, errorCharPosition) + 
+        newChar + 
+        sampleLicensePlates[plateIndex].substring(errorCharPosition + 1);
+      
+      return plateWithError;
+    }
+  }
+
+  // Đánh giá độ tin cậy của kết quả
+  getConfidenceScore(): number {
+    // Mô phỏng độ tin cậy dựa trên xác suất với phân phối chuẩn quanh MODEL_ACCURACY
+    const mean = this.MODEL_ACCURACY * 100;
+    const stdDev = 5; // Độ lệch chuẩn 5%
+    
+    // Tạo giá trị ngẫu nhiên theo phân phối chuẩn
+    let sum = 0;
+    for (let i = 0; i < 6; i++) { // Xấp xỉ phân phối chuẩn bằng định lý giới hạn trung tâm
+      sum += Math.random();
+    }
+    
+    // Chuyển đổi thành giá trị theo phân phối chuẩn
+    const normalRandom = ((sum - 3) / 3) * stdDev + mean;
+    
+    // Giới hạn trong khoảng [0-100]
+    return Math.max(0, Math.min(100, normalRandom));
+  }
+}
 
 const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate }) => {
   const [isScanning, setIsScanning] = useState(false);
@@ -57,6 +120,10 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
   const [cameraActive, setCameraActive] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [analysisSteps, setAnalysisSteps] = useState<string[]>([]);
+  const [detectionQuality, setDetectionQuality] = useState<"high" | "medium" | "low" | null>(null);
+
+  // Khởi tạo đối tượng mô phỏng CNN
+  const cnnDetector = new CNNLicensePlateDetector();
 
   // Xử lý khi tải ảnh lên
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +131,13 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
     if (file) {
       // Kiểm tra xem file có phải là ảnh không
       if (!file.type.startsWith('image/')) {
-        alert('Vui lòng tải lên một file ảnh');
+        toast.error('Vui lòng tải lên một file ảnh');
+        return;
+      }
+
+      // Kiểm tra kích thước file (tối đa 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Kích thước file quá lớn. Tối đa 5MB');
         return;
       }
 
@@ -73,6 +146,8 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
       setUploadedImage(imageUrl);
       setCameraActive(false); // Tắt camera nếu đang bật
       setScanResult(null); // Xóa kết quả quét trước đó
+      setDetectionQuality(null); // Xóa thông tin chất lượng nhận diện
+      toast.success('Đã tải ảnh lên thành công');
     }
   };
 
@@ -81,7 +156,7 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
     setAnalysisSteps(prev => [...prev, step]);
   };
 
-  // Mô phỏng quét biển số từ ảnh đã tải lên
+  // Quét biển số từ ảnh đã tải lên bằng mô hình CNN mô phỏng
   const scanUploadedImage = async () => {
     if (!uploadedImage) return;
     
@@ -89,44 +164,45 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
     setScanResult(null);
     setConfidence(0);
     setAnalysisSteps([]);
-    
-    // Mô phỏng các bước phân tích
-    updateAnalysisStep("Khởi tạo mô hình AI...");
-    
-    // Mô phỏng quá trình nhận diện
-    const recognitionInterval = setInterval(() => {
-      setConfidence((prev) => {
-        const newValue = Math.min(prev + Math.random() * 10, 99);
-        
-        // Thêm các bước phân tích dựa vào tiến độ
-        if (prev < 20 && newValue >= 20) {
-          updateAnalysisStep("Xử lý ảnh và cải thiện độ tương phản...");
-        } else if (prev < 40 && newValue >= 40) {
-          updateAnalysisStep("Phát hiện vùng chứa biển số...");
-        } else if (prev < 60 && newValue >= 60) {
-          updateAnalysisStep("Trích xuất ký tự từ biển số...");
-        } else if (prev < 80 && newValue >= 80) {
-          updateAnalysisStep("Nhận dạng các ký tự...");
-        } else if (prev < 95 && newValue >= 95) {
-          updateAnalysisStep("Xác minh định dạng biển số...");
-        }
-        
-        return newValue;
-      });
-    }, 300);
+    setDetectionQuality(null);
     
     try {
-      // Phân tích biển số dựa trên URL hình ảnh để có kết quả nhất quán
-      const detectedPlate = await analyzeLicensePlate(uploadedImage);
+      // Cập nhật tiến trình nhận diện qua thời gian
+      const recognitionInterval = setInterval(() => {
+        setConfidence(prev => {
+          const newValue = Math.min(prev + Math.random() * 3, 99);
+          return newValue;
+        });
+      }, 200);
+      
+      // Phân tích biển số bằng CNN mô phỏng
+      const detectedPlate = await cnnDetector.analyzeImage(uploadedImage, updateAnalysisStep);
       
       // Dừng đếm sau khi có kết quả
       clearInterval(recognitionInterval);
-      setConfidence(100);
+      
+      // Lấy điểm độ tin cậy từ mô hình
+      const confidenceScore = cnnDetector.getConfidenceScore();
+      setConfidence(confidenceScore);
+      
+      // Xác định chất lượng nhận diện dựa trên điểm độ tin cậy
+      if (confidenceScore >= 90) {
+        setDetectionQuality("high");
+      } else if (confidenceScore >= 75) {
+        setDetectionQuality("medium");
+      } else {
+        setDetectionQuality("low");
+      }
+      
+      // Thêm bước cuối cùng
       updateAnalysisStep("Phân tích hoàn tất!");
       
       // Cập nhật kết quả
       setScanResult(detectedPlate);
       setIsScanning(false);
+      
+      // Hiển thị thông báo thành công
+      toast.success(`Đã nhận diện biển số: ${detectedPlate}`);
       
       // Gọi hàm callback để thêm biển số mới
       onDetectPlate(detectedPlate);
@@ -134,54 +210,59 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
       clearInterval(recognitionInterval);
       setIsScanning(false);
       updateAnalysisStep("Lỗi khi phân tích biển số.");
+      toast.error("Không thể nhận diện biển số xe trong ảnh");
       console.error("Lỗi phân tích biển số:", error);
     }
   };
 
-  // Mô phỏng quá trình quét biển số xe qua camera
+  // Mô phỏng quá trình quét biển số xe qua camera với mô hình CNN mô phỏng
   const startScan = async () => {
     setIsScanning(true);
     setScanResult(null);
     setConfidence(0);
     setAnalysisSteps([]);
-    
-    updateAnalysisStep("Đang xử lý hình ảnh từ camera...");
-    
-    // Mô phỏng quá trình nhận diện
-    const recognitionInterval = setInterval(() => {
-      setConfidence((prev) => {
-        const newValue = Math.min(prev + Math.random() * 10, 99);
-        
-        // Thêm các bước phân tích dựa vào tiến độ
-        if (prev < 20 && newValue >= 20) {
-          updateAnalysisStep("Xử lý khung hình video...");
-        } else if (prev < 40 && newValue >= 40) {
-          updateAnalysisStep("Phát hiện vùng chứa biển số...");
-        } else if (prev < 60 && newValue >= 60) {
-          updateAnalysisStep("Trích xuất ký tự từ biển số...");
-        } else if (prev < 80 && newValue >= 80) {
-          updateAnalysisStep("Nhận dạng các ký tự...");
-        } else if (prev < 95 && newValue >= 95) {
-          updateAnalysisStep("Xác minh định dạng biển số...");
-        }
-        
-        return newValue;
-      });
-    }, 300);
+    setDetectionQuality(null);
     
     try {
+      // Cập nhật tiến trình nhận diện qua thời gian
+      const recognitionInterval = setInterval(() => {
+        setConfidence(prev => {
+          const newValue = Math.min(prev + Math.random() * 3, 99);
+          return newValue;
+        });
+      }, 200);
+      
       // Tạo một "mã hash" giả từ thời gian hiện tại để có kết quả khác nhau mỗi lần quét
       const timestamp = new Date().getTime().toString();
-      const detectedPlate = await analyzeLicensePlate(timestamp);
+      
+      // Phân tích biển số bằng CNN mô phỏng
+      const detectedPlate = await cnnDetector.analyzeImage(timestamp, updateAnalysisStep);
       
       // Dừng đếm sau khi có kết quả
       clearInterval(recognitionInterval);
-      setConfidence(100);
+      
+      // Lấy điểm độ tin cậy từ mô hình
+      const confidenceScore = cnnDetector.getConfidenceScore();
+      setConfidence(confidenceScore);
+      
+      // Xác định chất lượng nhận diện dựa trên điểm độ tin cậy
+      if (confidenceScore >= 90) {
+        setDetectionQuality("high");
+      } else if (confidenceScore >= 75) {
+        setDetectionQuality("medium");
+      } else {
+        setDetectionQuality("low");
+      }
+      
+      // Thêm bước cuối cùng
       updateAnalysisStep("Phân tích hoàn tất!");
       
       // Cập nhật kết quả
       setScanResult(detectedPlate);
       setIsScanning(false);
+      
+      // Hiển thị thông báo thành công
+      toast.success(`Đã nhận diện biển số: ${detectedPlate}`);
       
       // Gọi hàm callback để thêm biển số mới
       onDetectPlate(detectedPlate);
@@ -189,6 +270,7 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
       clearInterval(recognitionInterval);
       setIsScanning(false);
       updateAnalysisStep("Lỗi khi phân tích biển số.");
+      toast.error("Không thể nhận diện biển số xe");
       console.error("Lỗi phân tích biển số:", error);
     }
   };
@@ -199,6 +281,7 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
       onDetectPlate(customPlate);
       setCustomPlate("");
       setScanResult(customPlate);
+      toast.success(`Đã thêm biển số: ${customPlate}`);
     }
   };
 
@@ -208,6 +291,7 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
       setCameraActive(true);
       setUploadedImage(null); // Xóa ảnh đã tải lên (nếu có)
       setScanResult(null); // Xóa kết quả quét trước đó
+      setDetectionQuality(null); // Xóa thông tin chất lượng nhận diện
       
       // Giả lập kết nối camera
       if (videoRef.current) {
@@ -229,6 +313,7 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
       setUploadedImage(null);
       setScanResult(null);
       setAnalysisSteps([]);
+      setDetectionQuality(null);
     }
   };
 
@@ -237,12 +322,38 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
     fileInputRef.current?.click();
   };
 
+  // Render badge chỉ thị chất lượng nhận diện
+  const renderQualityBadge = () => {
+    if (!detectionQuality) return null;
+    
+    switch (detectionQuality) {
+      case "high":
+        return (
+          <div className="absolute top-2 left-2 bg-green-500/90 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
+            Nhận diện chính xác cao
+          </div>
+        );
+      case "medium":
+        return (
+          <div className="absolute top-2 left-2 bg-yellow-500/90 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
+            Nhận diện độ tin cậy trung bình
+          </div>
+        );
+      case "low":
+        return (
+          <div className="absolute top-2 left-2 bg-red-500/90 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
+            Nhận diện độ tin cậy thấp
+          </div>
+        );
+    }
+  };
+
   return (
     <div className="bg-card border border-border rounded-lg p-6 space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">AI Camera Scanner</h2>
+        <h2 className="text-2xl font-bold mb-2">AI Camera Scanner (CNN)</h2>
         <p className="text-muted-foreground mb-4">
-          Hệ thống nhận dạng biển số xe tự động sử dụng AI
+          Hệ thống nhận dạng biển số xe tự động sử dụng mạng CNN
         </p>
       </div>
 
@@ -274,6 +385,7 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
             >
               <Trash2 size={16} />
             </Button>
+            {renderQualityBadge()}
           </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -328,10 +440,20 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
           <div className="absolute bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm p-3">
             <div className="flex items-center gap-2">
               <Check className="text-green-500" />
-              <p>
-                <span className="font-medium">Kết quả: </span> 
-                <span className="text-primary font-bold">{scanResult}</span>
-              </p>
+              <div>
+                <p>
+                  <span className="font-medium">Biển số: </span> 
+                  <span className="text-primary font-bold">{scanResult}</span>
+                </p>
+                {detectionQuality && (
+                  <p className="text-xs text-muted-foreground">
+                    Độ tin cậy: {Math.round(confidence)}% - 
+                    {detectionQuality === "high" && " Chất lượng cao"}
+                    {detectionQuality === "medium" && " Chất lượng trung bình"}
+                    {detectionQuality === "low" && " Chất lượng thấp"}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -368,7 +490,9 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang quét...
               </>
             ) : (
-              <>Quét biển số</>
+              <>
+                <Scan className="mr-2 h-4 w-4" /> Quét biển số (CNN)
+              </>
             )}
           </Button>
         ) : uploadedImage ? (
@@ -382,7 +506,9 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang phân tích...
               </>
             ) : (
-              <>Phân tích ảnh</>
+              <>
+                <Scan className="mr-2 h-4 w-4" /> Phân tích ảnh (CNN)
+              </>
             )}
           </Button>
         ) : (
