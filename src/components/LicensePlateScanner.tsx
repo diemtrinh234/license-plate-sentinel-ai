@@ -2,7 +2,7 @@
 import React, { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Camera, Check, Upload, ImageIcon } from "lucide-react";
+import { Loader2, Camera, Check, Upload, ImageIcon, CameraOff, Trash2 } from "lucide-react";
 
 interface LicensePlateScannerProps {
   onDetectPlate: (plate: string) => void;
@@ -26,6 +26,26 @@ const sampleLicensePlates = [
   "99A-888.99", "74D-555.32", "20H-762.81", "60B-391.05"
 ];
 
+// Hàm phân tích biển số xe từ dữ liệu hình ảnh (mô phỏng)
+const analyzeLicensePlate = (imageUrl: string): Promise<string> => {
+  return new Promise((resolve) => {
+    // Tạo một giá trị hash đơn giản từ URL để luôn trả về cùng một kết quả cho cùng một hình ảnh
+    let hash = 0;
+    for (let i = 0; i < imageUrl.length; i++) {
+      hash = ((hash << 5) - hash) + imageUrl.charCodeAt(i);
+      hash |= 0; // Convert to 32bit integer
+    }
+    
+    // Lấy biển số xe dựa trên hash để kết quả nhất quán cho cùng một hình ảnh
+    const plateIndex = Math.abs(hash) % sampleLicensePlates.length;
+    
+    // Trả về kết quả sau một khoảng thời gian để mô phỏng thời gian xử lý
+    setTimeout(() => {
+      resolve(sampleLicensePlates[plateIndex]);
+    }, 2000);
+  });
+};
+
 const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
@@ -33,8 +53,10 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
   const [confidence, setConfidence] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [analysisSteps, setAnalysisSteps] = useState<string[]>([]);
 
   // Xử lý khi tải ảnh lên
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,61 +72,125 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
       const imageUrl = URL.createObjectURL(file);
       setUploadedImage(imageUrl);
       setCameraActive(false); // Tắt camera nếu đang bật
+      setScanResult(null); // Xóa kết quả quét trước đó
     }
   };
 
+  // Cập nhật trạng thái phân tích
+  const updateAnalysisStep = (step: string) => {
+    setAnalysisSteps(prev => [...prev, step]);
+  };
+
   // Mô phỏng quét biển số từ ảnh đã tải lên
-  const scanUploadedImage = () => {
+  const scanUploadedImage = async () => {
     if (!uploadedImage) return;
     
     setIsScanning(true);
     setScanResult(null);
     setConfidence(0);
+    setAnalysisSteps([]);
+    
+    // Mô phỏng các bước phân tích
+    updateAnalysisStep("Khởi tạo mô hình AI...");
     
     // Mô phỏng quá trình nhận diện
     const recognitionInterval = setInterval(() => {
-      setConfidence((prev) => Math.min(prev + Math.random() * 20, 99));
-    }, 500);
+      setConfidence((prev) => {
+        const newValue = Math.min(prev + Math.random() * 10, 99);
+        
+        // Thêm các bước phân tích dựa vào tiến độ
+        if (prev < 20 && newValue >= 20) {
+          updateAnalysisStep("Xử lý ảnh và cải thiện độ tương phản...");
+        } else if (prev < 40 && newValue >= 40) {
+          updateAnalysisStep("Phát hiện vùng chứa biển số...");
+        } else if (prev < 60 && newValue >= 60) {
+          updateAnalysisStep("Trích xuất ký tự từ biển số...");
+        } else if (prev < 80 && newValue >= 80) {
+          updateAnalysisStep("Nhận dạng các ký tự...");
+        } else if (prev < 95 && newValue >= 95) {
+          updateAnalysisStep("Xác minh định dạng biển số...");
+        }
+        
+        return newValue;
+      });
+    }, 300);
     
-    // Sau 3 giây sẽ có kết quả
-    setTimeout(() => {
+    try {
+      // Phân tích biển số dựa trên URL hình ảnh để có kết quả nhất quán
+      const detectedPlate = await analyzeLicensePlate(uploadedImage);
+      
+      // Dừng đếm sau khi có kết quả
       clearInterval(recognitionInterval);
       setConfidence(100);
+      updateAnalysisStep("Phân tích hoàn tất!");
       
-      // Lấy ngẫu nhiên một biển số từ danh sách mẫu
-      const randomPlate = sampleLicensePlates[Math.floor(Math.random() * sampleLicensePlates.length)];
-      setScanResult(randomPlate);
+      // Cập nhật kết quả
+      setScanResult(detectedPlate);
       setIsScanning(false);
       
       // Gọi hàm callback để thêm biển số mới
-      onDetectPlate(randomPlate);
-    }, 3000);
+      onDetectPlate(detectedPlate);
+    } catch (error) {
+      clearInterval(recognitionInterval);
+      setIsScanning(false);
+      updateAnalysisStep("Lỗi khi phân tích biển số.");
+      console.error("Lỗi phân tích biển số:", error);
+    }
   };
 
   // Mô phỏng quá trình quét biển số xe qua camera
-  const startScan = () => {
+  const startScan = async () => {
     setIsScanning(true);
     setScanResult(null);
     setConfidence(0);
+    setAnalysisSteps([]);
+    
+    updateAnalysisStep("Đang xử lý hình ảnh từ camera...");
     
     // Mô phỏng quá trình nhận diện
     const recognitionInterval = setInterval(() => {
-      setConfidence((prev) => Math.min(prev + Math.random() * 20, 99));
-    }, 500);
+      setConfidence((prev) => {
+        const newValue = Math.min(prev + Math.random() * 10, 99);
+        
+        // Thêm các bước phân tích dựa vào tiến độ
+        if (prev < 20 && newValue >= 20) {
+          updateAnalysisStep("Xử lý khung hình video...");
+        } else if (prev < 40 && newValue >= 40) {
+          updateAnalysisStep("Phát hiện vùng chứa biển số...");
+        } else if (prev < 60 && newValue >= 60) {
+          updateAnalysisStep("Trích xuất ký tự từ biển số...");
+        } else if (prev < 80 && newValue >= 80) {
+          updateAnalysisStep("Nhận dạng các ký tự...");
+        } else if (prev < 95 && newValue >= 95) {
+          updateAnalysisStep("Xác minh định dạng biển số...");
+        }
+        
+        return newValue;
+      });
+    }, 300);
     
-    // Sau 3 giây sẽ có kết quả
-    setTimeout(() => {
+    try {
+      // Tạo một "mã hash" giả từ thời gian hiện tại để có kết quả khác nhau mỗi lần quét
+      const timestamp = new Date().getTime().toString();
+      const detectedPlate = await analyzeLicensePlate(timestamp);
+      
+      // Dừng đếm sau khi có kết quả
       clearInterval(recognitionInterval);
       setConfidence(100);
+      updateAnalysisStep("Phân tích hoàn tất!");
       
-      // Lấy ngẫu nhiên một biển số từ danh sách mẫu
-      const randomPlate = sampleLicensePlates[Math.floor(Math.random() * sampleLicensePlates.length)];
-      setScanResult(randomPlate);
+      // Cập nhật kết quả
+      setScanResult(detectedPlate);
       setIsScanning(false);
       
       // Gọi hàm callback để thêm biển số mới
-      onDetectPlate(randomPlate);
-    }, 3000);
+      onDetectPlate(detectedPlate);
+    } catch (error) {
+      clearInterval(recognitionInterval);
+      setIsScanning(false);
+      updateAnalysisStep("Lỗi khi phân tích biển số.");
+      console.error("Lỗi phân tích biển số:", error);
+    }
   };
   
   // Xử lý gửi biển số tùy chỉnh
@@ -121,6 +207,7 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
     if (!cameraActive) {
       setCameraActive(true);
       setUploadedImage(null); // Xóa ảnh đã tải lên (nếu có)
+      setScanResult(null); // Xóa kết quả quét trước đó
       
       // Giả lập kết nối camera
       if (videoRef.current) {
@@ -135,12 +222,19 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
     }
   };
 
-  // Xóa ảnh đã tải lên
+  // Xóa ảnh đã tải lên và kết quả
   const clearUploadedImage = () => {
     if (uploadedImage) {
       URL.revokeObjectURL(uploadedImage);
       setUploadedImage(null);
+      setScanResult(null);
+      setAnalysisSteps([]);
     }
+  };
+
+  // Kích hoạt tải ảnh lên
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -178,14 +272,25 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
               className="absolute top-2 right-2 opacity-80 hover:opacity-100"
               onClick={clearUploadedImage}
             >
-              ×
+              <Trash2 size={16} />
             </Button>
           </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <div className="text-center">
-              <Camera size={48} className="mx-auto mb-2 text-muted-foreground" />
+              <CameraOff size={48} className="mx-auto mb-2 text-muted-foreground" />
               <p className="text-muted-foreground">Camera đang tắt</p>
+              <Button variant="outline" className="mt-4" onClick={triggerFileUpload}>
+                <Upload className="mr-2 h-4 w-4" /> Tải ảnh lên
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                id="license-plate-upload"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
             </div>
           </div>
         )}
@@ -200,6 +305,22 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
               ></div>
             </div>
             <p className="mt-2 text-sm">Đang quét... {Math.round(confidence)}%</p>
+            
+            <div className="mt-4 max-w-md w-full">
+              <div className="bg-secondary/30 rounded p-2 max-h-32 overflow-y-auto">
+                {analysisSteps.map((step, index) => (
+                  <p key={index} className="text-xs mb-1 text-muted-foreground flex items-center">
+                    {index === analysisSteps.length - 1 && (
+                      <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                    )}
+                    {index !== analysisSteps.length - 1 && (
+                      <Check className="h-3 w-3 mr-1.5 text-green-500" />
+                    )}
+                    {step}
+                  </p>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -225,8 +346,15 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
           className="flex-1"
           disabled={isScanning}
         >
-          <Camera className="mr-2 h-4 w-4" /> 
-          {cameraActive ? "Tắt Camera" : "Bật Camera"}
+          {cameraActive ? (
+            <>
+              <CameraOff className="mr-2 h-4 w-4" /> Tắt Camera
+            </>
+          ) : (
+            <>
+              <Camera className="mr-2 h-4 w-4" /> Bật Camera
+            </>
+          )}
         </Button>
         
         {cameraActive ? (
@@ -259,24 +387,22 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
           </Button>
         ) : (
           <div className="relative flex-1">
-            <Input
-              type="file"
-              id="license-plate-upload"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              disabled={isScanning}
-            />
             <Button 
               variant="outline"
               className="w-full flex items-center justify-center"
               disabled={isScanning}
-              asChild
+              onClick={triggerFileUpload}
             >
-              <label htmlFor="license-plate-upload" className="cursor-pointer">
-                <Upload className="mr-2 h-4 w-4" /> Tải ảnh lên
-              </label>
+              <Upload className="mr-2 h-4 w-4" /> Tải ảnh lên
             </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              id="license-plate-upload"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
           </div>
         )}
       </div>
