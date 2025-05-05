@@ -19,6 +19,7 @@ import { AlertCircle, CheckCircle2, Filter, Search } from "lucide-react";
 import { DashboardChart } from "@/components/DashboardChart";
 import LicensePlateScanner from "@/components/LicensePlateScanner";
 import { useToast } from "@/hooks/use-toast";
+import ViolationDetails from "@/components/ViolationDetails";
 
 // Định nghĩa kiểu dữ liệu cho trạng thái của xe
 interface Vehicle {
@@ -111,6 +112,8 @@ const Dashboard = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>(sampleVehicleData);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { toast } = useToast();
 
   // Hàm lọc và tìm kiếm biển số xe
@@ -159,6 +162,17 @@ const Dashboard = () => {
       description: `Biển số ${newPlate} đã được nhận diện tại ${location}`,
       variant: status === "violation" ? "destructive" : "default",
     });
+  };
+
+  // Hiển thị chi tiết xe
+  const handleShowDetails = (vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle);
+    setIsDetailsOpen(true);
+  };
+
+  // Đóng dialog chi tiết
+  const handleCloseDetails = () => {
+    setIsDetailsOpen(false);
   };
 
   return (
@@ -261,7 +275,13 @@ const Dashboard = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Button variant="outline" size="sm">Chi tiết</Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleShowDetails(vehicle)}
+                        >
+                          Chi tiết
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -282,6 +302,14 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Component hiển thị chi tiết vi phạm */}
+      <ViolationDetails 
+        vehicle={selectedVehicle}
+        isOpen={isDetailsOpen}
+        onClose={handleCloseDetails}
+      />
+      
       <Footer />
     </div>
   );
