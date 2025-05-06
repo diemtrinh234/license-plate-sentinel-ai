@@ -11,7 +11,8 @@ import {
   RefreshCw,
   ZoomIn,
   Upload,
-  Image
+  Image,
+  Search
 } from "lucide-react";
 import { toast } from '@/hooks/use-toast';
 import { Input } from "@/components/ui/input";
