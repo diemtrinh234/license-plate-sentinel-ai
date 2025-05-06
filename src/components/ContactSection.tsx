@@ -21,15 +21,15 @@ const ContactSection = () => {
                 <div className="space-y-4 text-muted-foreground">
                   <div className="flex items-start">
                     <div className="font-medium w-24">Địa chỉ:</div>
-                    <div>Tầng 10, Tòa nhà ABC, Số 123 Đường XYZ, Quận 1, TP. Hồ Chí Minh</div>
+                    <div>137 Kỳ Đồng, Thanh Khê Đông, Thanh Khê, Đà Nẵng, Việt Nam</div>
                   </div>
                   <div className="flex items-center">
                     <div className="font-medium w-24">Email:</div>
-                    <div>info@licensesentinel.com</div>
+                    <div>diemtrinhho03@gmail.com</div>
                   </div>
                   <div className="flex items-center">
                     <div className="font-medium w-24">Hotline:</div>
-                    <div>1800 1234</div>
+                    <div>0865126189</div>
                   </div>
                 </div>
               </div>
