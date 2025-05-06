@@ -20,6 +20,8 @@ import { DashboardChart } from "@/components/DashboardChart";
 import LicensePlateScanner from "@/components/LicensePlateScanner";
 import { useToast } from "@/hooks/use-toast";
 import ViolationDetails from "@/components/ViolationDetails";
+import ViolationHistory from "@/components/ViolationHistory";
+import DaNangMap from "@/components/DaNangMap";
 
 // Định nghĩa kiểu dữ liệu cho trạng thái của xe
 interface Vehicle {
@@ -114,6 +116,7 @@ const Dashboard = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedPlate, setSelectedPlate] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Hàm lọc và tìm kiếm biển số xe
@@ -129,11 +132,11 @@ const Dashboard = () => {
   // Thêm biển số xe mới từ scanner
   const handleAddNewPlate = (newPlate: string) => {
     const randomLocations = [
-      "Ngã tư Nguyễn Trãi - Khuất Duy Tiến",
-      "Đại lộ Thăng Long",
-      "Cầu Long Biên",
-      "Quốc lộ 1A",
-      "Đường Láng"
+      "Ngã tư Nguyễn Văn Linh - Hùng Vương, Đà Nẵng",
+      "Cầu Rồng, Đà Nẵng",
+      "Đường Bạch Đằng, Đà Nẵng",
+      "Đường 2/9, Đà Nẵng",
+      "Đại lộ Nguyễn Tất Thành, Đà Nẵng"
     ];
     
     const violations = ["Vượt đèn đỏ", "Quá tốc độ", "Đỗ sai quy định", "Bình thường"];
@@ -157,6 +160,9 @@ const Dashboard = () => {
     
     setVehicles([newVehicle, ...vehicles]);
     
+    // Cập nhật biển số được chọn để kiểm tra lịch sử vi phạm
+    setSelectedPlate(newPlate);
+    
     toast({
       title: "Phát hiện biển số mới",
       description: `Biển số ${newPlate} đã được nhận diện tại ${location}`,
@@ -175,12 +181,17 @@ const Dashboard = () => {
     setIsDetailsOpen(false);
   };
 
+  // Chọn biển số để kiểm tra lịch sử vi phạm
+  const handleSelectPlate = (plate: string) => {
+    setSelectedPlate(plate);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-2">Bảng Điều Khiển</h1>
-        <p className="text-muted-foreground mb-8">Quản lý và giám sát giao thông thông minh</p>
+        <p className="text-muted-foreground mb-8">Quản lý và giám sát giao thông thông minh tại Đà Nẵng</p>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
@@ -209,7 +220,9 @@ const Dashboard = () => {
         <Tabs defaultValue="plates" className="w-full mb-8">
           <TabsList className="mb-4">
             <TabsTrigger value="plates">Biển Số Xe</TabsTrigger>
-            <TabsTrigger value="scanner">Scanner AI</TabsTrigger>
+            <TabsTrigger value="scanner">Scanner AI (CNN)</TabsTrigger>
+            <TabsTrigger value="map">Bản Đồ Đà Nẵng</TabsTrigger>
+            <TabsTrigger value="history">Kiểm Tra Vi Phạm</TabsTrigger>
             <TabsTrigger value="analytics">Thống Kê</TabsTrigger>
           </TabsList>
           
@@ -256,7 +269,14 @@ const Dashboard = () => {
                 <TableBody>
                   {filteredVehicles.map((vehicle) => (
                     <TableRow key={vehicle.id}>
-                      <TableCell className="font-medium">{vehicle.plate}</TableCell>
+                      <TableCell className="font-medium">
+                        <button
+                          className="hover:text-primary hover:underline transition-colors"
+                          onClick={() => handleSelectPlate(vehicle.plate)}
+                        >
+                          {vehicle.plate}
+                        </button>
+                      </TableCell>
                       <TableCell>{vehicle.time}</TableCell>
                       <TableCell>{vehicle.date}</TableCell>
                       <TableCell>{vehicle.location}</TableCell>
@@ -292,6 +312,22 @@ const Dashboard = () => {
           
           <TabsContent value="scanner" className="space-y-4">
             <LicensePlateScanner onDetectPlate={handleAddNewPlate} />
+          </TabsContent>
+          
+          <TabsContent value="map" className="space-y-4">
+            <DaNangMap detectedPlate={selectedPlate} />
+          </TabsContent>
+          
+          <TabsContent value="history" className="space-y-4">
+            <ViolationHistory 
+              licensePlate={selectedPlate} 
+              onSelectViolation={(violation) => {
+                const matchingVehicle = vehicles.find(v => v.plate === violation.plate);
+                if (matchingVehicle) {
+                  handleShowDetails(matchingVehicle);
+                }
+              }}
+            />
           </TabsContent>
           
           <TabsContent value="analytics" className="space-y-4">

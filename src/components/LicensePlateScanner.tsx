@@ -168,7 +168,7 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
     
     try {
       // Cập nhật tiến trình nhận diện qua thời gian
-      const recognitionInterval = setInterval(() => {
+      let recognitionInterval = setInterval(() => {
         setConfidence(prev => {
           const newValue = Math.min(prev + Math.random() * 3, 99);
           return newValue;
@@ -225,7 +225,7 @@ const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate
     
     try {
       // Cập nhật tiến trình nhận diện qua thời gian
-      const recognitionInterval = setInterval(() => {
+      let recognitionInterval = setInterval(() => {
         setConfidence(prev => {
           const newValue = Math.min(prev + Math.random() * 3, 99);
           return newValue;
