@@ -2,8 +2,48 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
 
 const ContactSection = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    organization: "",
+    subject: "",
+    message: ""
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Simulate form submission
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        organization: "",
+        subject: "",
+        message: ""
+      });
+      
+      toast({
+        title: "Yêu cầu đã được gửi",
+        description: "Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.",
+      });
+    }, 1500);
+  };
+
   return (
     <section id="contact" className="section">
       <div className="container mx-auto">
@@ -56,40 +96,79 @@ const ContactSection = () => {
 
           <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
             <h3 className="text-xl font-semibold mb-6">Gửi Yêu Cầu Tư Vấn</h3>
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="name" className="text-sm font-medium">Họ và tên</label>
-                  <Input id="name" placeholder="Nhập họ và tên" />
+                  <Input 
+                    id="name" 
+                    placeholder="Nhập họ và tên" 
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="email" className="text-sm font-medium">Email</label>
-                  <Input id="email" type="email" placeholder="Nhập địa chỉ email" />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="Nhập địa chỉ email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                  />
                 </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="phone" className="text-sm font-medium">Số điện thoại</label>
-                  <Input id="phone" placeholder="Nhập số điện thoại" />
+                  <Input 
+                    id="phone" 
+                    placeholder="Nhập số điện thoại"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="organization" className="text-sm font-medium">Tổ chức</label>
-                  <Input id="organization" placeholder="Nhập tên tổ chức" />
+                  <Input 
+                    id="organization" 
+                    placeholder="Nhập tên tổ chức"
+                    value={formData.organization}
+                    onChange={handleChange}
+                  />
                 </div>
               </div>
               
               <div className="space-y-2">
                 <label htmlFor="subject" className="text-sm font-medium">Tiêu đề</label>
-                <Input id="subject" placeholder="Nhập tiêu đề" />
+                <Input 
+                  id="subject" 
+                  placeholder="Nhập tiêu đề"
+                  value={formData.subject}
+                  onChange={handleChange}
+                  required
+                />
               </div>
               
               <div className="space-y-2">
                 <label htmlFor="message" className="text-sm font-medium">Nội dung</label>
-                <Textarea id="message" rows={5} placeholder="Nhập nội dung chi tiết về nhu cầu của bạn" />
+                <Textarea 
+                  id="message" 
+                  rows={5} 
+                  placeholder="Nhập nội dung chi tiết về nhu cầu của bạn"
+                  value={formData.message}
+                  onChange={handleChange}
+                  required
+                />
               </div>
               
-              <Button type="submit" className="w-full">Gửi yêu cầu</Button>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Đang gửi..." : "Gửi yêu cầu"}
+              </Button>
               
               <p className="text-xs text-muted-foreground text-center">
                 Bằng cách nhấn nút gửi, bạn đồng ý với điều khoản bảo mật thông tin của chúng tôi.

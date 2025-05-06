@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import ViolationDetails from "@/components/ViolationDetails";
 import ViolationHistory from "@/components/ViolationHistory";
 import DaNangMap from "@/components/DaNangMap";
+import PlateChecker from "@/components/PlateChecker";
 
 // Định nghĩa kiểu dữ liệu cho trạng thái của xe
 interface Vehicle {
@@ -318,15 +319,7 @@ const Dashboard = () => {
           </TabsContent>
           
           <TabsContent value="history" className="space-y-4">
-            <ViolationHistory 
-              licensePlate={selectedPlate} 
-              onSelectViolation={(violation) => {
-                const matchingVehicle = vehicles.find(v => v.plate === violation.plate);
-                if (matchingVehicle) {
-                  handleShowDetails(matchingVehicle);
-                }
-              }}
-            />
+            <PlateChecker onCheck={handleSelectPlate} />
           </TabsContent>
           
           <TabsContent value="analytics" className="space-y-4">
