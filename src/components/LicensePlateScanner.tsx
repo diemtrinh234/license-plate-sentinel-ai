@@ -120,7 +120,7 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
     setUploadedImage(imageUrl);
     
     // Load the image
-    const img = new Image();
+    const img = new window.Image(); // Fixed: Use window.Image instead of just Image constructor
     img.onload = () => {
       imageRef.current = img;
       // Process the image after it's loaded
