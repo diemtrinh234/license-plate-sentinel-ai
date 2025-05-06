@@ -37,6 +37,7 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
   const recognitionIntervalRef = useRef<number | null>(null);
 
   // Start the camera stream
@@ -77,6 +78,7 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
       tracks.forEach(track => track.stop());
       videoRef.current.srcObject = null;
       setIsScanning(false);
+      setVideoLoaded(false);
       
       // Clear recognition interval
       if (recognitionIntervalRef.current !== null) {
@@ -122,7 +124,7 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
 
   // Simulate CNN recognition with quality assessment
   const recognizeLicensePlate = () => {
-    if (!isScanning || !videoRef.current || !canvasRef.current || isProcessing) return;
+    if (!isScanning || !videoRef.current || !canvasRef.current || isProcessing || !videoLoaded) return;
     
     setIsProcessing(true);
     
@@ -132,6 +134,13 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
     
     if (!context) return;
     
+    // Check if video has metadata loaded and dimensions are valid
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      console.log("Video dimensions not ready yet");
+      setIsProcessing(false);
+      return;
+    }
+    
     // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -139,84 +148,89 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
     // Draw current video frame to canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    // Get image data for processing
-    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-    
-    // Assess image quality
-    const qualityScore = assessImageQuality(imageData);
-    
-    // Determine quality category
-    let qualityCategory: 'good' | 'medium' | 'poor';
-    if (qualityScore >= qualityThresholds.good) {
-      qualityCategory = 'good';
-    } else if (qualityScore >= qualityThresholds.medium) {
-      qualityCategory = 'medium';
-    } else {
-      qualityCategory = 'poor';
-    }
-    
-    setImageQuality(qualityCategory);
-    
-    // Simulate CNN processing time
-    setTimeout(() => {
-      // Only proceed if quality is sufficient
-      if (qualityScore >= qualityThresholds.medium) {
-        // Simulate CNN recognition
-        // In a real app, you would pass the image to a trained CNN model
-        
-        // Generate a simulated confidence score based on quality
-        // Better quality = more likely to have higher confidence
-        const simulatedConfidence = Math.min(0.98, qualityScore * 0.9 + Math.random() * 0.1);
-        
-        // Only accept results with high enough confidence
-        if (simulatedConfidence >= cnnConfidenceThreshold) {
-          // Generate a random but realistic Vietnamese license plate
-          // In real app, this would be the output from the CNN
-          const provinces = ['43A', '51G', '92C', '74D', '38H', '43B'];
-          const province = provinces[Math.floor(Math.random() * provinces.length)];
-          const numbers = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
-          const formattedNumbers = numbers.substring(0, 3) + '.' + numbers.substring(3);
-          const plate = `${province}-${formattedNumbers}`;
-          
-          setLicensePlate(plate);
-          setConfidence(simulatedConfidence);
-          
-          // Call the onDetection callback if provided
-          if (onDetection) {
-            onDetection(plate, simulatedConfidence);
-          }
-          
-          toast({
-            title: "Biển số được nhận diện",
-            description: `Đã xác định biển số: ${plate}`,
-          });
-          
-          // Stop recognition after successful detection
-          if (recognitionIntervalRef.current !== null) {
-            window.clearInterval(recognitionIntervalRef.current);
-            recognitionIntervalRef.current = null;
-          }
-          
-          // Stop camera after successful detection (optional)
-          // stopCamera();
-        } else {
-          console.log(`Recognition confidence too low: ${(simulatedConfidence * 100).toFixed(2)}%`);
-        }
+    try {
+      // Get image data for processing
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Assess image quality
+      const qualityScore = assessImageQuality(imageData);
+      
+      // Determine quality category
+      let qualityCategory: 'good' | 'medium' | 'poor';
+      if (qualityScore >= qualityThresholds.good) {
+        qualityCategory = 'good';
+      } else if (qualityScore >= qualityThresholds.medium) {
+        qualityCategory = 'medium';
       } else {
-        console.log(`Image quality too low for accurate recognition: ${(qualityScore * 100).toFixed(2)}%`);
-        
-        // If quality is poor, show guidance toast
-        if (qualityCategory === 'poor') {
-          toast({
-            variant: "warning",
-            title: "Chất lượng hình ảnh kém",
-            description: "Hãy đảm bảo ánh sáng tốt và camera đủ gần với biển số.",
-          });
-        }
+        qualityCategory = 'poor';
       }
       
+      setImageQuality(qualityCategory);
+      
+      // Simulate CNN processing time
+      setTimeout(() => {
+        // Only proceed if quality is sufficient
+        if (qualityScore >= qualityThresholds.medium) {
+          // Simulate CNN recognition
+          // In a real app, you would pass the image to a trained CNN model
+          
+          // Generate a simulated confidence score based on quality
+          // Better quality = more likely to have higher confidence
+          const simulatedConfidence = Math.min(0.98, qualityScore * 0.9 + Math.random() * 0.1);
+          
+          // Only accept results with high enough confidence
+          if (simulatedConfidence >= cnnConfidenceThreshold) {
+            // Generate a random but realistic Vietnamese license plate
+            // In real app, this would be the output from the CNN
+            const provinces = ['43A', '51G', '92C', '74D', '38H', '43B'];
+            const province = provinces[Math.floor(Math.random() * provinces.length)];
+            const numbers = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+            const formattedNumbers = numbers.substring(0, 3) + '.' + numbers.substring(3);
+            const plate = `${province}-${formattedNumbers}`;
+            
+            setLicensePlate(plate);
+            setConfidence(simulatedConfidence);
+            
+            // Call the onDetection callback if provided
+            if (onDetection) {
+              onDetection(plate, simulatedConfidence);
+            }
+            
+            toast({
+              title: "Biển số được nhận diện",
+              description: `Đã xác định biển số: ${plate}`,
+            });
+            
+            // Stop recognition after successful detection
+            if (recognitionIntervalRef.current !== null) {
+              window.clearInterval(recognitionIntervalRef.current);
+              recognitionIntervalRef.current = null;
+            }
+            
+            // Stop camera after successful detection (optional)
+            // stopCamera();
+          } else {
+            console.log(`Recognition confidence too low: ${(simulatedConfidence * 100).toFixed(2)}%`);
+          }
+        } else {
+          console.log(`Image quality too low for accurate recognition: ${(qualityScore * 100).toFixed(2)}%`);
+          
+          // If quality is poor, show guidance toast
+          if (qualityCategory === 'poor') {
+            toast({
+              variant: "destructive",
+              title: "Chất lượng hình ảnh kém",
+              description: "Hãy đảm bảo ánh sáng tốt và camera đủ gần với biển số.",
+            });
+          }
+        }
+        
+        setIsProcessing(false);
+      }, 1000); // Simulate processing delay
+    } catch (err) {
+      console.error("Error processing image:", err);
       setIsProcessing(false);
-    }, 1000); // Simulate processing delay
+    }
   };
 
   // Toggle full screen mode for the camera view
@@ -236,9 +250,19 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
     }
   };
 
+  // Handle video loaded metadata
+  const handleVideoLoaded = () => {
+    setVideoLoaded(true);
+    if (videoRef.current) {
+      videoRef.current.play().catch(err => {
+        console.error("Error playing video:", err);
+      });
+    }
+  };
+
   // Set up continuous recognition when camera is active
   useEffect(() => {
-    if (isScanning && !licensePlate) {
+    if (isScanning && !licensePlate && videoLoaded) {
       // Clear any existing interval first
       if (recognitionIntervalRef.current !== null) {
         window.clearInterval(recognitionIntervalRef.current);
@@ -258,7 +282,7 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
         recognitionIntervalRef.current = null;
       }
     };
-  }, [isScanning]);
+  }, [isScanning, videoLoaded, licensePlate]);
 
   // Cleanup on component unmount
   useEffect(() => {
@@ -277,7 +301,7 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
             autoPlay
             playsInline
             className={`w-full ${isFullscreen ? 'h-screen object-cover' : 'aspect-video'}`}
-            onCanPlay={() => videoRef.current?.play()}
+            onLoadedMetadata={handleVideoLoaded}
           />
           
           {/* Canvas for image processing (hidden) */}

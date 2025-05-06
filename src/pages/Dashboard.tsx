@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -311,7 +310,7 @@ const Dashboard = () => {
           </TabsContent>
           
           <TabsContent value="scanner" className="space-y-4">
-            <LicensePlateScanner onDetectPlate={handleAddNewPlate} />
+            <LicensePlateScanner onDetection={handleAddNewPlate} />
           </TabsContent>
           
           <TabsContent value="map" className="space-y-4">
