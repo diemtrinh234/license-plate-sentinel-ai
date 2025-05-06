@@ -22,19 +22,19 @@ const Navbar = () => {
               </Link>
               <div className="hidden md:flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">
-                  Xin chào, <span className="font-medium text-foreground">{user?.name}</span>
+                  Hello, <span className="font-medium text-foreground">{user?.name}</span>
                 </span>
                 <Button variant="outline" size="sm" onClick={logout}>
-                  Đăng xuất
+                  Sign Out
                 </Button>
               </div>
               <Button variant="outline" size="sm" onClick={logout} className="md:hidden">
-                Đăng xuất
+                Sign Out
               </Button>
             </>
           ) : (
             <Link to="/auth">
-              <Button size="sm">Đăng nhập</Button>
+              <Button size="sm">Sign In</Button>
             </Link>
           )}
         </nav>

@@ -3,23 +3,23 @@ import { Badge } from "@/components/ui/badge";
 
 const steps = [
   {
-    title: "Thu thập dữ liệu",
-    description: "Camera giám sát chất lượng cao thu thập hình ảnh và video liên tục từ các điểm giao thông quan trọng.",
+    title: "Data Collection",
+    description: "High-quality surveillance cameras continuously collect images and videos from key traffic points.",
     image: "https://images.unsplash.com/photo-1617897711385-df94739142c5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
   },
   {
-    title: "Xử lý AI",
-    description: "Thuật toán CNN phân tích hình ảnh, nhận diện phương tiện và trích xuất thông tin biển số xe với độ chính xác cao.",
+    title: "AI Processing",
+    description: "CNN algorithms analyze images, recognize vehicles and extract license plate information with high accuracy.",
     image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
   },
   {
-    title: "Phân tích dữ liệu",
-    description: "Hệ thống phân tích và so sánh thông tin biển số với cơ sở dữ liệu để xác định các trường hợp vi phạm hoặc đáng ngờ.",
+    title: "Data Analysis",
+    description: "The system analyzes and compares license plate information with databases to identify violations or suspicious cases.",
     image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
   },
   {
-    title: "Báo cáo và cảnh báo",
-    description: "Gửi thông báo và báo cáo tự động đến bộ phận giám sát, hỗ trợ ra quyết định nhanh chóng và chính xác.",
+    title: "Reporting and Alerts",
+    description: "Send automatic notifications and reports to monitoring units, supporting quick and accurate decision making.",
     image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
   }
 ];
@@ -29,11 +29,11 @@ const HowItWorks = () => {
     <section id="how-it-works" className="section">
       <div className="container mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <Badge variant="outline" className="mb-4">Quy trình hoạt động</Badge>
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Cách Hệ Thống Hoạt Động</h2>
+          <Badge variant="outline" className="mb-4">How it works</Badge>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4">How The System Works</h2>
           <p className="text-muted-foreground text-lg">
-            Công nghệ AI CNN tiên tiến giúp hệ thống nhận dạng biển số xe với độ chính xác cao, 
-            hỗ trợ đắc lực cho công tác quản lý giao thông
+            Advanced AI CNN technology helps the system recognize license plates with high accuracy, 
+            effectively supporting traffic management operations
           </p>
         </div>
 
@@ -67,9 +67,9 @@ const HowItWorks = () => {
                     <h3 className="text-2xl font-bold mb-4">{step.title}</h3>
                     <p className="text-lg text-muted-foreground mb-6">{step.description}</p>
                     <div className="p-4 bg-secondary/20 border border-border rounded-md">
-                      <div className="text-sm font-medium mb-2">Công nghệ được sử dụng:</div>
+                      <div className="text-sm font-medium mb-2">Technologies used:</div>
                       <div className="flex flex-wrap gap-2">
-                        {['AI CNN', 'Deep Learning', 'OpenCV', 'Camera IP'].map((tech, i) => (
+                        {['AI CNN', 'Deep Learning', 'OpenCV', 'IP Camera'].map((tech, i) => (
                           <span key={i} className="inline-block px-3 py-1 bg-secondary rounded-full text-xs">
                             {tech}
                           </span>

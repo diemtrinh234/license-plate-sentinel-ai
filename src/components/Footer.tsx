@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 
 const Footer = () => {
@@ -8,7 +9,7 @@ const Footer = () => {
           <div className="space-y-4">
             <h3 className="text-xl font-bold">LicenseSentinel</h3>
             <p className="text-muted-foreground">
-              Giải pháp giám sát giao thông thông minh tích hợp AI CNN nhận dạng biển số xe hàng đầu Việt Nam.
+              Leading AI CNN-based smart traffic monitoring solution for license plate recognition in Vietnam.
             </p>
             <div className="flex space-x-4">
               <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -35,32 +36,32 @@ const Footer = () => {
           </div>
           
           <div>
-            <h4 className="text-lg font-semibold mb-4">Giải pháp</h4>
+            <h4 className="text-lg font-semibold mb-4">Solutions</h4>
             <ul className="space-y-2 text-muted-foreground">
-              <li><a href="#" className="hover:text-primary">Giám sát giao thông</a></li>
-              <li><a href="#" className="hover:text-primary">Quản lý vi phạm</a></li>
-              <li><a href="#" className="hover:text-primary">Bảo mật khu vực</a></li>
-              <li><a href="#" className="hover:text-primary">Tích hợp doanh nghiệp</a></li>
-              <li><a href="#" className="hover:text-primary">Phân tích lưu lượng</a></li>
+              <li><a href="#" className="hover:text-primary">Traffic Monitoring</a></li>
+              <li><a href="#" className="hover:text-primary">Violation Management</a></li>
+              <li><a href="#" className="hover:text-primary">Area Security</a></li>
+              <li><a href="#" className="hover:text-primary">Enterprise Integration</a></li>
+              <li><a href="#" className="hover:text-primary">Traffic Analysis</a></li>
             </ul>
           </div>
           
           <div>
-            <h4 className="text-lg font-semibold mb-4">Hỗ trợ</h4>
+            <h4 className="text-lg font-semibold mb-4">Support</h4>
             <ul className="space-y-2 text-muted-foreground">
-              <li><a href="#" className="hover:text-primary">Trung tâm hỗ trợ</a></li>
-              <li><a href="#" className="hover:text-primary">Tài liệu API</a></li>
-              <li><a href="#" className="hover:text-primary">Hướng dẫn sử dụng</a></li>
-              <li><a href="#" className="hover:text-primary">Câu hỏi thường gặp</a></li>
-              <li><a href="#" className="hover:text-primary">Yêu cầu tính năng</a></li>
+              <li><a href="#" className="hover:text-primary">Support Center</a></li>
+              <li><a href="#" className="hover:text-primary">API Documentation</a></li>
+              <li><a href="#" className="hover:text-primary">User Guide</a></li>
+              <li><a href="#" className="hover:text-primary">FAQs</a></li>
+              <li><a href="#" className="hover:text-primary">Feature Requests</a></li>
             </ul>
           </div>
           
           <div>
-            <h4 className="text-lg font-semibold mb-4">Liên hệ</h4>
+            <h4 className="text-lg font-semibold mb-4">Contact</h4>
             <ul className="space-y-2 text-muted-foreground">
-              <li>137 Kỳ Đồng, Thanh Khê Đông, Thanh Khê</li>
-              <li>Đà Nẵng, Việt Nam</li>
+              <li>137 Ky Dong, Thanh Khe Dong, Thanh Khe</li>
+              <li>Da Nang, Vietnam</li>
               <li>Email: diemtrinhho03@gmail.com</li>
               <li>Hotline: 0865126189</li>
             </ul>
@@ -69,12 +70,12 @@ const Footer = () => {
         
         <div className="border-t border-border mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-muted-foreground text-sm">
-            &copy; {new Date().getFullYear()} LicenseSentinel. Tất cả các quyền được bảo lưu.
+            &copy; {new Date().getFullYear()} LicenseSentinel. All rights reserved.
           </p>
           <div className="flex space-x-4 mt-4 md:mt-0">
-            <a href="#" className="text-sm text-muted-foreground hover:text-primary">Điều khoản sử dụng</a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-primary">Chính sách bảo mật</a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-primary">Cookie</a>
+            <a href="#" className="text-sm text-muted-foreground hover:text-primary">Terms of Service</a>
+            <a href="#" className="text-sm text-muted-foreground hover:text-primary">Privacy Policy</a>
+            <a href="#" className="text-sm text-muted-foreground hover:text-primary">Cookies</a>
           </div>
         </div>
       </div>

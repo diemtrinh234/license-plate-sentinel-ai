@@ -10,22 +10,22 @@ const Hero = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
             <div className="inline-block px-4 py-2 bg-secondary/50 rounded-full">
-              <span className="text-primary font-medium">Hệ thống giám sát mới nhất</span>
+              <span className="text-primary font-medium">Latest Monitoring System</span>
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-              Hệ Thống Giám Sát Giao Thông 
-              <span className="gradient-text"> Thông Minh</span>
+              Smart Traffic 
+              <span className="gradient-text"> Monitoring System</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-xl">
-              Tối ưu hóa quản lý giao thông với hệ thống AI nhận dạng biển số xe thông minh, 
-              giúp nâng cao an ninh và giám sát hiệu quả.
+              Optimize traffic management with our intelligent AI license plate recognition system, 
+              enhancing security and effective monitoring.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" className="sm:w-auto">
-                Tìm hiểu thêm
+                Learn More
               </Button>
               <Button size="lg" variant="secondary" className="sm:w-auto">
-                Đặt lịch demo
+                Schedule Demo
               </Button>
             </div>
             <div className="flex items-center gap-6 pt-4 text-sm text-muted-foreground">
@@ -33,13 +33,13 @@ const Hero = () => {
                 <div className="h-10 w-10 rounded-full bg-secondary/50 flex items-center justify-center">
                   <Camera size={20} className="text-primary" />
                 </div>
-                <span>Nhận dạng chính xác 99.5%</span>
+                <span>99.5% Recognition Accuracy</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="h-10 w-10 rounded-full bg-secondary/50 flex items-center justify-center">
                   <Cctv size={20} className="text-primary" />
                 </div>
-                <span>Giám sát 24/7</span>
+                <span>24/7 Monitoring</span>
               </div>
             </div>
           </div>
@@ -64,12 +64,12 @@ const Hero = () => {
                               <CarFront size={16} className="text-primary" />
                             </div>
                             <div>
-                              <div className="text-xs text-muted-foreground">Nhận dạng biển số</div>
+                              <div className="text-xs text-muted-foreground">License plate detection</div>
                               <div className="font-medium">43A-123.45</div>
                             </div>
                           </div>
                           <div className="text-xs bg-primary/20 px-2 py-1 rounded-full text-primary animate-pulse-slow">
-                            Đang xử lý...
+                            Processing...
                           </div>
                         </div>
                       </div>

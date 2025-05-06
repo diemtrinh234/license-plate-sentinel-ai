@@ -19,8 +19,8 @@ const PlateChecker: React.FC<PlateCheckerProps> = ({ onCheck }) => {
     if (!plateInput || plateInput.trim().length < 5) {
       toast({
         variant: "destructive",
-        title: "Biển số không hợp lệ",
-        description: "Vui lòng nhập biển số xe hợp lệ.",
+        title: "Invalid License Plate",
+        description: "Please enter a valid license plate.",
       });
       return;
     }
@@ -46,27 +46,27 @@ const PlateChecker: React.FC<PlateCheckerProps> = ({ onCheck }) => {
     }
     
     toast({
-      title: "Đang kiểm tra biển số",
-      description: `Biển số: ${formattedPlate}`,
+      title: "Checking license plate",
+      description: `License plate: ${formattedPlate}`,
     });
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Kiểm Tra Vi Phạm Biển Số</CardTitle>
+        <CardTitle className="text-xl">Check License Plate Violations</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-2">
           <Input
-            placeholder="Nhập biển số xe (VD: 43A-123.45)"
+            placeholder="Enter license plate (e.g. 43A-123.45)"
             value={plateInput}
             onChange={(e) => setPlateInput(e.target.value)}
             onKeyUp={(e) => e.key === 'Enter' && handleCheck()}
           />
           <Button onClick={handleCheck}>
             <Search size={18} className="mr-2" />
-            Kiểm tra
+            Check
           </Button>
         </div>
         

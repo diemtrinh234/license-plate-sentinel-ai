@@ -24,13 +24,13 @@ const Index = () => {
         {isAuthenticated ? (
           <Link to="/dashboard">
             <Button size="lg" className="animate-pulse-slow">
-              Truy cập Dashboard
+              Access Dashboard
             </Button>
           </Link>
         ) : (
           <Link to="/auth">
             <Button size="lg" className="animate-pulse-slow">
-              Đăng nhập để truy cập Dashboard
+              Sign in to access Dashboard
             </Button>
           </Link>
         )}

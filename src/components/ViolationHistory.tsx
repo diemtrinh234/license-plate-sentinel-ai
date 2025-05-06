@@ -22,15 +22,15 @@ interface ViolationRecord {
   status: "violation" | "normal";
 }
 
-// Dữ liệu mẫu về lịch sử vi phạm
+// Sample violation history data
 const violationHistoryData: ViolationRecord[] = [
   {
     id: 1,
     plate: "43A-123.45",
     time: "15:30:22",
     date: "02/05/2025",
-    location: "Ngã tư Nguyễn Văn Linh - Hùng Vương, Đà Nẵng",
-    type: "Vượt đèn đỏ",
+    location: "Nguyen Van Linh - Hung Vuong intersection, Da Nang",
+    type: "Running Red Light",
     status: "violation",
   },
   {
@@ -38,8 +38,8 @@ const violationHistoryData: ViolationRecord[] = [
     plate: "92C-437.19",
     time: "09:15:45",
     date: "28/04/2025",
-    location: "Cầu Rồng, Đà Nẵng",
-    type: "Quá tốc độ",
+    location: "Dragon Bridge, Da Nang",
+    type: "Speeding",
     status: "violation",
   },
   {
@@ -47,8 +47,8 @@ const violationHistoryData: ViolationRecord[] = [
     plate: "43B-592.73",
     time: "14:22:10",
     date: "25/04/2025",
-    location: "Đường Bạch Đằng, Đà Nẵng",
-    type: "Đỗ sai quy định",
+    location: "Bach Dang Street, Da Nang",
+    type: "Illegal Parking",
     status: "violation",
   },
   {
@@ -56,8 +56,8 @@ const violationHistoryData: ViolationRecord[] = [
     plate: "51G-246.81",
     time: "11:05:33",
     date: "20/04/2025",
-    location: "Đường 2/9, Đà Nẵng",
-    type: "Vượt đèn đỏ",
+    location: "2/9 Street, Da Nang",
+    type: "Running Red Light",
     status: "violation",
   },
   {
@@ -65,8 +65,8 @@ const violationHistoryData: ViolationRecord[] = [
     plate: "74D-555.32",
     time: "18:45:12",
     date: "15/04/2025",
-    location: "Đại lộ Nguyễn Tất Thành, Đà Nẵng",
-    type: "Quá tốc độ",
+    location: "Nguyen Tat Thanh Avenue, Da Nang",
+    type: "Speeding",
     status: "violation",
   },
 ];
@@ -84,7 +84,7 @@ const ViolationHistory: React.FC<ViolationHistoryProps> = ({
   const [violationRecords, setViolationRecords] = useState<ViolationRecord[]>([]);
   const [hasRecords, setHasRecords] = useState<boolean | null>(null);
 
-  // Tìm kiếm lịch sử vi phạm khi biển số thay đổi
+  // Search violation history when license plate changes
   useEffect(() => {
     if (!licensePlate) {
       setViolationRecords([]);
@@ -96,10 +96,10 @@ const ViolationHistory: React.FC<ViolationHistoryProps> = ({
       setIsSearching(true);
       setHasRecords(null);
       
-      // Mô phỏng truy vấn cơ sở dữ liệu
+      // Simulate database query
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Lọc các bản ghi vi phạm khớp với biển số
+      // Filter violation records matching the license plate
       const records = violationHistoryData.filter(
         record => record.plate === licensePlate
       );
@@ -112,27 +112,27 @@ const ViolationHistory: React.FC<ViolationHistoryProps> = ({
     searchViolations();
   }, [licensePlate]);
 
-  // Nếu không có biển số được chọn
+  // If no license plate is selected
   if (!licensePlate) {
     return (
       <div className="bg-card border border-border rounded-lg p-6 text-center">
         <Search className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-        <h3 className="text-lg font-medium mb-1">Chưa có biển số được quét</h3>
+        <h3 className="text-lg font-medium mb-1">No license plate scanned</h3>
         <p className="text-sm text-muted-foreground">
-          Quét biển số xe để kiểm tra lịch sử vi phạm
+          Scan a license plate to check violation history
         </p>
       </div>
     );
   }
 
-  // Đang tìm kiếm
+  // While searching
   if (isSearching) {
     return (
       <div className="bg-card border border-border rounded-lg p-8 text-center">
         <Loader2 className="h-10 w-10 mx-auto text-primary animate-spin mb-4" />
-        <h3 className="text-lg font-medium mb-1">Đang kiểm tra lịch sử vi phạm</h3>
+        <h3 className="text-lg font-medium mb-1">Checking violation history</h3>
         <p className="text-sm text-muted-foreground">
-          Đang tìm kiếm dữ liệu cho biển số {licensePlate}
+          Searching data for license plate {licensePlate}
         </p>
       </div>
     );
@@ -142,8 +142,8 @@ const ViolationHistory: React.FC<ViolationHistoryProps> = ({
     <div className="bg-card border border-border rounded-lg overflow-hidden">
       <div className="p-4 border-b border-border flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-medium">Lịch sử vi phạm</h3>
-          <p className="text-sm text-muted-foreground">Biển số: {licensePlate}</p>
+          <h3 className="text-lg font-medium">Violation History</h3>
+          <p className="text-sm text-muted-foreground">License plate: {licensePlate}</p>
         </div>
         
         {hasRecords !== null && (
@@ -156,7 +156,7 @@ const ViolationHistory: React.FC<ViolationHistoryProps> = ({
             ) : (
               <CheckCircle2 className="h-3 w-3 mr-1" />
             )}
-            {hasRecords ? "Có vi phạm" : "Không có vi phạm"}
+            {hasRecords ? "Violations found" : "No violations"}
           </Badge>
         )}
       </div>
@@ -164,13 +164,13 @@ const ViolationHistory: React.FC<ViolationHistoryProps> = ({
       {violationRecords.length > 0 ? (
         <div className="overflow-x-auto">
           <Table>
-            <TableCaption>Lịch sử vi phạm của biển số {licensePlate}</TableCaption>
+            <TableCaption>Violation history for license plate {licensePlate}</TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead>Ngày</TableHead>
-                <TableHead>Thời gian</TableHead>
-                <TableHead>Địa điểm</TableHead>
-                <TableHead>Loại vi phạm</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Time</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Violation Type</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -197,9 +197,9 @@ const ViolationHistory: React.FC<ViolationHistoryProps> = ({
       ) : (hasRecords === false) ? (
         <div className="p-8 text-center">
           <CheckCircle2 className="h-10 w-10 mx-auto text-green-500 mb-3" />
-          <h3 className="text-lg font-medium text-green-600 mb-1">Không có vi phạm</h3>
+          <h3 className="text-lg font-medium text-green-600 mb-1">No violations</h3>
           <p className="text-sm text-muted-foreground">
-            Biển số {licensePlate} chưa có lịch sử vi phạm trong hệ thống
+            License plate {licensePlate} has no violation history in the system
           </p>
         </div>
       ) : null}
