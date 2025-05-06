@@ -1,552 +1,386 @@
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useEffect } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Loader2, Camera, Check, Upload, ImageIcon, CameraOff, Trash2, Scan } from "lucide-react";
-import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Camera, 
+  CameraOff, 
+  AlertCircle, 
+  CheckCircle2, 
+  RefreshCw,
+  ZoomIn
+} from "lucide-react";
+import { toast } from '@/hooks/use-toast';
 
-interface LicensePlateScannerProps {
-  onDetectPlate: (plate: string) => void;
+// Simulated CNN model parameters
+const cnnConfidenceThreshold = 0.85;
+
+// Mock quality assessment values
+const qualityThresholds = {
+  good: 0.8,
+  medium: 0.6,
+  poor: 0
+};
+
+interface LicensePlateProps {
+  onDetection?: (plate: string, confidence: number) => void;
 }
 
-// Định nghĩa kiểu dữ liệu cho trạng thái của xe
-interface Vehicle {
-  id: number;
-  plate: string;
-  time: string;
-  date: string;
-  location: string;
-  type: string;
-  status: "violation" | "normal";
-}
-
-// Danh sách biển số xe mẫu để mô phỏng
-const sampleLicensePlates = [
-  "29A-123.45", "30E-678.90", "51G-246.81", "43B-592.73", 
-  "34H-875.62", "92C-437.19", "51F-789.21", "36E-358.46",
-  "99A-888.99", "74D-555.32", "20H-762.81", "60B-391.05"
-];
-
-// Class mô phỏng cho mô hình CNN để nhận dạng biển số xe
-class CNNLicensePlateDetector {
-  private readonly MODEL_ACCURACY = 0.95; // Độ chính xác mô phỏng của mô hình 95%
-  private readonly PROCESSING_STEPS = [
-    "Khởi tạo mô hình CNN...",
-    "Tiền xử lý hình ảnh...",
-    "Chuẩn hóa độ sáng và tương phản...",
-    "Phát hiện vùng chứa biển số...",
-    "Áp dụng phân đoạn ảnh...",
-    "Trích xuất đặc trưng CNN...",
-    "Dò tìm cạnh và góc của biển số...",
-    "Xử lý phân đoạn ký tự...",
-    "Nhận dạng ký tự bằng mạng CNN...",
-    "Chỉnh sửa hậu kỳ và kiểm tra định dạng...",
-    "Xác minh kết quả với độ tin cậy cao..."
-  ];
-
-  // Phân tích ảnh và trả về kết quả cùng các bước xử lý
-  async analyzeImage(imageUrl: string, updateStep: (step: string) => void): Promise<string> {
-    // Tạo một giá trị hash đơn giản từ URL để luôn trả về cùng một kết quả cho cùng một hình ảnh
-    let hash = 0;
-    for (let i = 0; i < imageUrl.length; i++) {
-      hash = ((hash << 5) - hash) + imageUrl.charCodeAt(i);
-      hash |= 0; // Chuyển đổi thành số nguyên 32-bit
-    }
-    
-    // Lấy biển số xe dựa trên hash để kết quả nhất quán cho cùng một hình ảnh
-    const plateIndex = Math.abs(hash) % sampleLicensePlates.length;
-    
-    // Mô phỏng các bước xử lý của CNN
-    for (const step of this.PROCESSING_STEPS) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      updateStep(step);
-    }
-    
-    // Áp dụng nhiễu ngẫu nhiên để mô phỏng kết quả với độ chính xác của mô hình
-    const accuracy = Math.random();
-    if (accuracy <= this.MODEL_ACCURACY) {
-      // Kết quả chính xác
-      return sampleLicensePlates[plateIndex];
-    } else {
-      // Mô phỏng lỗi nhận dạng (5% khả năng)
-      const errorCharPosition = Math.floor(Math.random() * sampleLicensePlates[plateIndex].length);
-      const possibleChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-.";
-      const originalChar = sampleLicensePlates[plateIndex][errorCharPosition];
-      let newChar = originalChar;
-      
-      // Đảm bảo ký tự mới khác ký tự ban đầu
-      while (newChar === originalChar) {
-        newChar = possibleChars[Math.floor(Math.random() * possibleChars.length)];
-      }
-      
-      // Thay thế một ký tự trong biển số để mô phỏng lỗi nhận dạng
-      const plateWithError = 
-        sampleLicensePlates[plateIndex].substring(0, errorCharPosition) + 
-        newChar + 
-        sampleLicensePlates[plateIndex].substring(errorCharPosition + 1);
-      
-      return plateWithError;
-    }
-  }
-
-  // Đánh giá độ tin cậy của kết quả
-  getConfidenceScore(): number {
-    // Mô phỏng độ tin cậy dựa trên xác suất với phân phối chuẩn quanh MODEL_ACCURACY
-    const mean = this.MODEL_ACCURACY * 100;
-    const stdDev = 5; // Độ lệch chuẩn 5%
-    
-    // Tạo giá trị ngẫu nhiên theo phân phối chuẩn
-    let sum = 0;
-    for (let i = 0; i < 6; i++) { // Xấp xỉ phân phối chuẩn bằng định lý giới hạn trung tâm
-      sum += Math.random();
-    }
-    
-    // Chuyển đổi thành giá trị theo phân phối chuẩn
-    const normalRandom = ((sum - 3) / 3) * stdDev + mean;
-    
-    // Giới hạn trong khoảng [0-100]
-    return Math.max(0, Math.min(100, normalRandom));
-  }
-}
-
-const LicensePlateScanner: React.FC<LicensePlateScannerProps> = ({ onDetectPlate }) => {
+const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isScanning, setIsScanning] = useState(false);
-  const [scanResult, setScanResult] = useState<string | null>(null);
-  const [customPlate, setCustomPlate] = useState("");
-  const [confidence, setConfidence] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [analysisSteps, setAnalysisSteps] = useState<string[]>([]);
-  const [detectionQuality, setDetectionQuality] = useState<"high" | "medium" | "low" | null>(null);
+  const [licensePlate, setLicensePlate] = useState<string | null>(null);
+  const [confidence, setConfidence] = useState<number>(0);
+  const [imageQuality, setImageQuality] = useState<'good' | 'medium' | 'poor' | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const recognitionIntervalRef = useRef<number | null>(null);
 
-  // Khởi tạo đối tượng mô phỏng CNN
-  const cnnDetector = new CNNLicensePlateDetector();
-
-  // Xử lý khi tải ảnh lên
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Kiểm tra xem file có phải là ảnh không
-      if (!file.type.startsWith('image/')) {
-        toast.error('Vui lòng tải lên một file ảnh');
-        return;
-      }
-
-      // Kiểm tra kích thước file (tối đa 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Kích thước file quá lớn. Tối đa 5MB');
-        return;
-      }
-
-      // Chuyển đổi file thành URL để hiển thị
-      const imageUrl = URL.createObjectURL(file);
-      setUploadedImage(imageUrl);
-      setCameraActive(false); // Tắt camera nếu đang bật
-      setScanResult(null); // Xóa kết quả quét trước đó
-      setDetectionQuality(null); // Xóa thông tin chất lượng nhận diện
-      toast.success('Đã tải ảnh lên thành công');
-    }
-  };
-
-  // Cập nhật trạng thái phân tích
-  const updateAnalysisStep = (step: string) => {
-    setAnalysisSteps(prev => [...prev, step]);
-  };
-
-  // Quét biển số từ ảnh đã tải lên bằng mô hình CNN mô phỏng
-  const scanUploadedImage = async () => {
-    if (!uploadedImage) return;
-    
-    setIsScanning(true);
-    setScanResult(null);
-    setConfidence(0);
-    setAnalysisSteps([]);
-    setDetectionQuality(null);
-    
+  // Start the camera stream
+  const startCamera = async () => {
     try {
-      // Cập nhật tiến trình nhận diện qua thời gian
-      let recognitionInterval = setInterval(() => {
-        setConfidence(prev => {
-          const newValue = Math.min(prev + Math.random() * 3, 99);
-          return newValue;
-        });
-      }, 200);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      });
       
-      // Phân tích biển số bằng CNN mô phỏng
-      const detectedPlate = await cnnDetector.analyzeImage(uploadedImage, updateAnalysisStep);
-      
-      // Dừng đếm sau khi có kết quả
-      clearInterval(recognitionInterval);
-      
-      // Lấy điểm độ tin cậy từ mô hình
-      const confidenceScore = cnnDetector.getConfidenceScore();
-      setConfidence(confidenceScore);
-      
-      // Xác định chất lượng nhận diện dựa trên điểm độ tin cậy
-      if (confidenceScore >= 90) {
-        setDetectionQuality("high");
-      } else if (confidenceScore >= 75) {
-        setDetectionQuality("medium");
-      } else {
-        setDetectionQuality("low");
-      }
-      
-      // Thêm bước cuối cùng
-      updateAnalysisStep("Phân tích hoàn tất!");
-      
-      // Cập nhật kết quả
-      setScanResult(detectedPlate);
-      setIsScanning(false);
-      
-      // Hiển thị thông báo thành công
-      toast.success(`Đã nhận diện biển số: ${detectedPlate}`);
-      
-      // Gọi hàm callback để thêm biển số mới
-      onDetectPlate(detectedPlate);
-    } catch (error) {
-      clearInterval(recognitionInterval);
-      setIsScanning(false);
-      updateAnalysisStep("Lỗi khi phân tích biển số.");
-      toast.error("Không thể nhận diện biển số xe trong ảnh");
-      console.error("Lỗi phân tích biển số:", error);
-    }
-  };
-
-  // Mô phỏng quá trình quét biển số xe qua camera với mô hình CNN mô phỏng
-  const startScan = async () => {
-    setIsScanning(true);
-    setScanResult(null);
-    setConfidence(0);
-    setAnalysisSteps([]);
-    setDetectionQuality(null);
-    
-    try {
-      // Cập nhật tiến trình nhận diện qua thời gian
-      let recognitionInterval = setInterval(() => {
-        setConfidence(prev => {
-          const newValue = Math.min(prev + Math.random() * 3, 99);
-          return newValue;
-        });
-      }, 200);
-      
-      // Tạo một "mã hash" giả từ thời gian hiện tại để có kết quả khác nhau mỗi lần quét
-      const timestamp = new Date().getTime().toString();
-      
-      // Phân tích biển số bằng CNN mô phỏng
-      const detectedPlate = await cnnDetector.analyzeImage(timestamp, updateAnalysisStep);
-      
-      // Dừng đếm sau khi có kết quả
-      clearInterval(recognitionInterval);
-      
-      // Lấy điểm độ tin cậy từ mô hình
-      const confidenceScore = cnnDetector.getConfidenceScore();
-      setConfidence(confidenceScore);
-      
-      // Xác định chất lượng nhận diện dựa trên điểm độ tin cậy
-      if (confidenceScore >= 90) {
-        setDetectionQuality("high");
-      } else if (confidenceScore >= 75) {
-        setDetectionQuality("medium");
-      } else {
-        setDetectionQuality("low");
-      }
-      
-      // Thêm bước cuối cùng
-      updateAnalysisStep("Phân tích hoàn tất!");
-      
-      // Cập nhật kết quả
-      setScanResult(detectedPlate);
-      setIsScanning(false);
-      
-      // Hiển thị thông báo thành công
-      toast.success(`Đã nhận diện biển số: ${detectedPlate}`);
-      
-      // Gọi hàm callback để thêm biển số mới
-      onDetectPlate(detectedPlate);
-    } catch (error) {
-      clearInterval(recognitionInterval);
-      setIsScanning(false);
-      updateAnalysisStep("Lỗi khi phân tích biển số.");
-      toast.error("Không thể nhận diện biển số xe");
-      console.error("Lỗi phân tích biển số:", error);
-    }
-  };
-  
-  // Xử lý gửi biển số tùy chỉnh
-  const handleSubmitCustomPlate = () => {
-    if (customPlate.trim()) {
-      onDetectPlate(customPlate);
-      setCustomPlate("");
-      setScanResult(customPlate);
-      toast.success(`Đã thêm biển số: ${customPlate}`);
-    }
-  };
-
-  // Mô phỏng bật camera
-  const toggleCamera = () => {
-    if (!cameraActive) {
-      setCameraActive(true);
-      setUploadedImage(null); // Xóa ảnh đã tải lên (nếu có)
-      setScanResult(null); // Xóa kết quả quét trước đó
-      setDetectionQuality(null); // Xóa thông tin chất lượng nhận diện
-      
-      // Giả lập kết nối camera
       if (videoRef.current) {
-        // Trong trường hợp thực tế, chúng ta sẽ kết nối với camera thật
-        // Ở đây chỉ là mô phỏng nên không yêu cầu quyền truy cập
-        videoRef.current.play().catch(() => {
-          console.log("Video không thể phát vì đây chỉ là mô phỏng");
+        videoRef.current.srcObject = stream;
+        setIsScanning(true);
+        setError(null);
+        toast({
+          title: "Camera kích hoạt thành công",
+          description: "Đang quét biển số xe...",
         });
       }
+    } catch (err) {
+      console.error('Error accessing camera:', err);
+      setError('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập camera của trình duyệt.');
+      toast({
+        variant: "destructive",
+        title: "Lỗi camera",
+        description: "Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.",
+      });
+    }
+  };
+
+  // Stop the camera stream
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+      setIsScanning(false);
+      
+      // Clear recognition interval
+      if (recognitionIntervalRef.current !== null) {
+        window.clearInterval(recognitionIntervalRef.current);
+        recognitionIntervalRef.current = null;
+      }
+    }
+  };
+
+  // Toggle camera on/off
+  const toggleCamera = () => {
+    if (isScanning) {
+      stopCamera();
     } else {
-      setCameraActive(false);
+      startCamera();
     }
   };
 
-  // Xóa ảnh đã tải lên và kết quả
-  const clearUploadedImage = () => {
-    if (uploadedImage) {
-      URL.revokeObjectURL(uploadedImage);
-      setUploadedImage(null);
-      setScanResult(null);
-      setAnalysisSteps([]);
-      setDetectionQuality(null);
-    }
-  };
-
-  // Kích hoạt tải ảnh lên
-  const triggerFileUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  // Render badge chỉ thị chất lượng nhận diện
-  const renderQualityBadge = () => {
-    if (!detectionQuality) return null;
+  // Assess image quality
+  const assessImageQuality = (imageData: ImageData): number => {
+    // This is a simulated quality assessment
+    // In a real app, you would analyze contrast, brightness, blur, etc.
     
-    switch (detectionQuality) {
-      case "high":
-        return (
-          <div className="absolute top-2 left-2 bg-green-500/90 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
-            Nhận diện chính xác cao
-          </div>
-        );
-      case "medium":
-        return (
-          <div className="absolute top-2 left-2 bg-yellow-500/90 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
-            Nhận diện độ tin cậy trung bình
-          </div>
-        );
-      case "low":
-        return (
-          <div className="absolute top-2 left-2 bg-red-500/90 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
-            Nhận diện độ tin cậy thấp
-          </div>
-        );
+    // Simulate quality assessment based on image properties
+    // For example, checking brightness, contrast, blur level, etc.
+    const data = imageData.data;
+    
+    // Calculate average brightness
+    let brightness = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      brightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
+    }
+    brightness /= (data.length / 4);
+    
+    // Normalize brightness (0-255) to quality score (0-1)
+    // This is simplified - a real implementation would be more complex
+    const normalizedBrightness = brightness / 255;
+    
+    // Return a quality score (0-1)
+    // This is a very simplified approach
+    return Math.min(1, normalizedBrightness * 1.5);
+  };
+
+  // Simulate CNN recognition with quality assessment
+  const recognizeLicensePlate = () => {
+    if (!isScanning || !videoRef.current || !canvasRef.current || isProcessing) return;
+    
+    setIsProcessing(true);
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    
+    if (!context) return;
+    
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw current video frame to canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Get image data for processing
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    
+    // Assess image quality
+    const qualityScore = assessImageQuality(imageData);
+    
+    // Determine quality category
+    let qualityCategory: 'good' | 'medium' | 'poor';
+    if (qualityScore >= qualityThresholds.good) {
+      qualityCategory = 'good';
+    } else if (qualityScore >= qualityThresholds.medium) {
+      qualityCategory = 'medium';
+    } else {
+      qualityCategory = 'poor';
+    }
+    
+    setImageQuality(qualityCategory);
+    
+    // Simulate CNN processing time
+    setTimeout(() => {
+      // Only proceed if quality is sufficient
+      if (qualityScore >= qualityThresholds.medium) {
+        // Simulate CNN recognition
+        // In a real app, you would pass the image to a trained CNN model
+        
+        // Generate a simulated confidence score based on quality
+        // Better quality = more likely to have higher confidence
+        const simulatedConfidence = Math.min(0.98, qualityScore * 0.9 + Math.random() * 0.1);
+        
+        // Only accept results with high enough confidence
+        if (simulatedConfidence >= cnnConfidenceThreshold) {
+          // Generate a random but realistic Vietnamese license plate
+          // In real app, this would be the output from the CNN
+          const provinces = ['43A', '51G', '92C', '74D', '38H', '43B'];
+          const province = provinces[Math.floor(Math.random() * provinces.length)];
+          const numbers = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+          const formattedNumbers = numbers.substring(0, 3) + '.' + numbers.substring(3);
+          const plate = `${province}-${formattedNumbers}`;
+          
+          setLicensePlate(plate);
+          setConfidence(simulatedConfidence);
+          
+          // Call the onDetection callback if provided
+          if (onDetection) {
+            onDetection(plate, simulatedConfidence);
+          }
+          
+          toast({
+            title: "Biển số được nhận diện",
+            description: `Đã xác định biển số: ${plate}`,
+          });
+          
+          // Stop recognition after successful detection
+          if (recognitionIntervalRef.current !== null) {
+            window.clearInterval(recognitionIntervalRef.current);
+            recognitionIntervalRef.current = null;
+          }
+          
+          // Stop camera after successful detection (optional)
+          // stopCamera();
+        } else {
+          console.log(`Recognition confidence too low: ${(simulatedConfidence * 100).toFixed(2)}%`);
+        }
+      } else {
+        console.log(`Image quality too low for accurate recognition: ${(qualityScore * 100).toFixed(2)}%`);
+        
+        // If quality is poor, show guidance toast
+        if (qualityCategory === 'poor') {
+          toast({
+            variant: "warning",
+            title: "Chất lượng hình ảnh kém",
+            description: "Hãy đảm bảo ánh sáng tốt và camera đủ gần với biển số.",
+          });
+        }
+      }
+      
+      setIsProcessing(false);
+    }, 1000); // Simulate processing delay
+  };
+
+  // Toggle full screen mode for the camera view
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  // Retake/rescan license plate
+  const handleRetake = () => {
+    setLicensePlate(null);
+    setConfidence(0);
+    setImageQuality(null);
+    
+    // Start continuous recognition again
+    if (isScanning && recognitionIntervalRef.current === null) {
+      recognitionIntervalRef.current = window.setInterval(recognizeLicensePlate, 2000);
     }
   };
+
+  // Set up continuous recognition when camera is active
+  useEffect(() => {
+    if (isScanning && !licensePlate) {
+      // Clear any existing interval first
+      if (recognitionIntervalRef.current !== null) {
+        window.clearInterval(recognitionIntervalRef.current);
+      }
+      
+      // Start a new recognition interval
+      recognitionIntervalRef.current = window.setInterval(recognizeLicensePlate, 2000);
+      
+      // Call recognition once immediately
+      recognizeLicensePlate();
+    }
+    
+    return () => {
+      // Clean up interval on component unmount or when scanning stops
+      if (recognitionIntervalRef.current !== null) {
+        window.clearInterval(recognitionIntervalRef.current);
+        recognitionIntervalRef.current = null;
+      }
+    };
+  }, [isScanning]);
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6 space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">AI Camera Scanner (CNN)</h2>
-        <p className="text-muted-foreground mb-4">
-          Hệ thống nhận dạng biển số xe tự động sử dụng mạng CNN
-        </p>
-      </div>
-
-      <div className="relative aspect-video bg-black/90 rounded-md overflow-hidden">
-        {cameraActive ? (
-          <video 
+    <Card className={`overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
+      <CardContent className="p-0">
+        <div className="relative">
+          {/* Video element for camera feed */}
+          <video
             ref={videoRef}
-            className="w-full h-full object-cover"
-            muted
-            loop
+            autoPlay
             playsInline
-            poster="https://images.unsplash.com/photo-1577687710332-deec52d35ff9?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-          >
-            <source src="https://assets.mixkit.co/videos/preview/mixkit-traffic-on-a-rainy-night-4221-large.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-        ) : uploadedImage ? (
-          <div className="w-full h-full flex items-center justify-center relative">
-            <img 
-              src={uploadedImage} 
-              alt="Uploaded license plate" 
-              className="max-w-full max-h-full object-contain" 
-            />
-            <Button 
-              variant="destructive" 
-              size="icon" 
-              className="absolute top-2 right-2 opacity-80 hover:opacity-100"
-              onClick={clearUploadedImage}
-            >
-              <Trash2 size={16} />
-            </Button>
-            {renderQualityBadge()}
-          </div>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="text-center">
-              <CameraOff size={48} className="mx-auto mb-2 text-muted-foreground" />
-              <p className="text-muted-foreground">Camera đang tắt</p>
-              <Button variant="outline" className="mt-4" onClick={triggerFileUpload}>
-                <Upload className="mr-2 h-4 w-4" /> Tải ảnh lên
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                id="license-plate-upload"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-            </div>
-          </div>
-        )}
-
-        {isScanning && (
-          <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center backdrop-blur-sm">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-            <div className="w-64 h-2 bg-secondary rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary transition-all duration-300"
-                style={{ width: `${confidence}%` }}
-              ></div>
-            </div>
-            <p className="mt-2 text-sm">Đang quét... {Math.round(confidence)}%</p>
-            
-            <div className="mt-4 max-w-md w-full">
-              <div className="bg-secondary/30 rounded p-2 max-h-32 overflow-y-auto">
-                {analysisSteps.map((step, index) => (
-                  <p key={index} className="text-xs mb-1 text-muted-foreground flex items-center">
-                    {index === analysisSteps.length - 1 && (
-                      <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
-                    )}
-                    {index !== analysisSteps.length - 1 && (
-                      <Check className="h-3 w-3 mr-1.5 text-green-500" />
-                    )}
-                    {step}
-                  </p>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {scanResult && !isScanning && (
-          <div className="absolute bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm p-3">
-            <div className="flex items-center gap-2">
-              <Check className="text-green-500" />
-              <div>
-                <p>
-                  <span className="font-medium">Biển số: </span> 
-                  <span className="text-primary font-bold">{scanResult}</span>
-                </p>
-                {detectionQuality && (
-                  <p className="text-xs text-muted-foreground">
-                    Độ tin cậy: {Math.round(confidence)}% - 
-                    {detectionQuality === "high" && " Chất lượng cao"}
-                    {detectionQuality === "medium" && " Chất lượng trung bình"}
-                    {detectionQuality === "low" && " Chất lượng thấp"}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <canvas ref={canvasRef} className="hidden"></canvas>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-4">
-        <Button 
-          onClick={toggleCamera} 
-          variant={cameraActive ? "destructive" : "outline"}
-          className="flex-1"
-          disabled={isScanning}
-        >
-          {cameraActive ? (
-            <>
-              <CameraOff className="mr-2 h-4 w-4" /> Tắt Camera
-            </>
-          ) : (
-            <>
-              <Camera className="mr-2 h-4 w-4" /> Bật Camera
-            </>
-          )}
-        </Button>
-        
-        {cameraActive ? (
-          <Button 
-            onClick={startScan} 
-            disabled={isScanning || !cameraActive}
-            className="flex-1"
-          >
-            {isScanning ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang quét...
-              </>
-            ) : (
-              <>
-                <Scan className="mr-2 h-4 w-4" /> Quét biển số (CNN)
-              </>
-            )}
-          </Button>
-        ) : uploadedImage ? (
-          <Button 
-            onClick={scanUploadedImage} 
-            disabled={isScanning}
-            className="flex-1"
-          >
-            {isScanning ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang phân tích...
-              </>
-            ) : (
-              <>
-                <Scan className="mr-2 h-4 w-4" /> Phân tích ảnh (CNN)
-              </>
-            )}
-          </Button>
-        ) : (
-          <div className="relative flex-1">
-            <Button 
-              variant="outline"
-              className="w-full flex items-center justify-center"
-              disabled={isScanning}
-              onClick={triggerFileUpload}
-            >
-              <Upload className="mr-2 h-4 w-4" /> Tải ảnh lên
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              id="license-plate-upload"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-            />
-          </div>
-        )}
-      </div>
-      
-      <div className="border-t border-border pt-4 mt-4">
-        <p className="text-sm text-muted-foreground mb-2">Hoặc nhập biển số xe thủ công:</p>
-        <div className="flex gap-2">
-          <Input 
-            value={customPlate} 
-            onChange={(e) => setCustomPlate(e.target.value)} 
-            placeholder="Ví dụ: 30E-555.67"
+            className={`w-full ${isFullscreen ? 'h-screen object-cover' : 'aspect-video'}`}
+            onCanPlay={() => videoRef.current?.play()}
           />
-          <Button onClick={handleSubmitCustomPlate} disabled={!customPlate.trim()}>
-            Thêm
-          </Button>
+          
+          {/* Canvas for image processing (hidden) */}
+          <canvas ref={canvasRef} className="hidden" />
+          
+          {/* License plate detection overlay */}
+          {isScanning && !licensePlate && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="w-64 h-16 border-2 border-primary rounded-md flex items-center justify-center mb-2">
+                <span className="text-xs text-primary font-medium">Đặt biển số xe vào khung này</span>
+              </div>
+              {isProcessing && (
+                <div className="mt-2">
+                  <RefreshCw className="animate-spin text-primary" size={24} />
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Error message */}
+          {error && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+              <div className="text-center p-4">
+                <AlertCircle className="mx-auto mb-2 text-destructive" size={32} />
+                <h3 className="font-medium text-lg">Lỗi kết nối camera</h3>
+                <p className="text-sm text-muted-foreground">{error}</p>
+              </div>
+            </div>
+          )}
+          
+          {/* License plate result */}
+          {licensePlate && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/80 p-4">
+              <div className="bg-card border border-border rounded-lg p-4 max-w-xs w-full">
+                <div className="text-center mb-4">
+                  <CheckCircle2 className="text-green-500 mx-auto mb-2" size={32} />
+                  <h3 className="text-lg font-medium">Biển số xe đã xác định</h3>
+                </div>
+                
+                <div className="border border-border rounded-lg p-3 mb-4 text-center">
+                  <span className="font-mono text-2xl font-bold">{licensePlate}</span>
+                </div>
+                
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Độ tin cậy:</span>
+                    <Badge variant={confidence > 0.9 ? "default" : "outline"}>
+                      {(confidence * 100).toFixed(1)}%
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Chất lượng hình ảnh:</span>
+                    <Badge 
+                      variant={
+                        imageQuality === 'good' ? "default" : 
+                        imageQuality === 'medium' ? "outline" : 
+                        "destructive"
+                      }
+                    >
+                      {imageQuality === 'good' ? 'Tốt' : 
+                       imageQuality === 'medium' ? 'Trung bình' : 
+                       'Kém'}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={handleRetake}
+                  >
+                    Quét lại
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Camera controls */}
+          <div className="absolute bottom-4 right-4 flex gap-2">
+            <Button 
+              size="icon" 
+              variant="secondary"
+              onClick={toggleFullscreen}
+              className="rounded-full shadow-lg"
+            >
+              <ZoomIn size={18} />
+            </Button>
+            
+            <Button 
+              size="icon" 
+              variant={isScanning ? "destructive" : "default"}
+              onClick={toggleCamera}
+              className="rounded-full shadow-lg"
+            >
+              {isScanning ? <CameraOff size={18} /> : <Camera size={18} />}
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
