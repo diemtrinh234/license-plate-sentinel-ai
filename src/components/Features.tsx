@@ -1,5 +1,7 @@
 
 import { Camera, CarFront, Cctv, Monitor, Route, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const featuresData = [
   {
@@ -59,6 +61,23 @@ const Features = () => {
               <p className="text-muted-foreground">{feature.description}</p>
             </div>
           ))}
+        </div>
+        
+        <div className="mt-16 text-center">
+          <div className="max-w-2xl mx-auto bg-card p-6 rounded-lg border border-border shadow-md">
+            <h3 className="text-2xl font-bold mb-3">Ready to experience these features?</h3>
+            <p className="text-muted-foreground mb-6">Get started with our smart traffic monitoring system today and revolutionize your traffic management.</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/auth">
+                <Button size="lg" className="w-full sm:w-auto">
+                  Start Free Trial
+                </Button>
+              </Link>
+              <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                Request Demo
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </section>

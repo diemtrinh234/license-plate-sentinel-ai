@@ -1,6 +1,6 @@
-
 import { Button } from "@/components/ui/button";
 import { Camera, CarFront, Cctv } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Hero = () => {
   return (
@@ -21,12 +21,19 @@ const Hero = () => {
               enhancing security and effective monitoring.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="sm:w-auto">
-                Learn More
-              </Button>
+              <Link to="/dashboard">
+                <Button size="lg" className="sm:w-auto group">
+                  Get Started Now
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:translate-x-1"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                </Button>
+              </Link>
               <Button size="lg" variant="secondary" className="sm:w-auto">
                 Schedule Demo
               </Button>
+            </div>
+            <div className="p-4 bg-card/80 backdrop-blur-sm rounded-lg border border-border shadow-sm animate-fade-in">
+              <p className="text-sm font-medium mb-2">Limited Time Offer</p>
+              <p className="text-xs text-muted-foreground">Sign up today for a free 30-day trial with full access to all premium features</p>
             </div>
             <div className="flex items-center gap-6 pt-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
