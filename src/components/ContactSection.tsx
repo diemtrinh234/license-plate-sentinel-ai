@@ -38,8 +38,8 @@ const ContactSection = () => {
       });
       
       toast({
-        title: "Yêu cầu đã được gửi",
-        description: "Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.",
+        title: "Request sent",
+        description: "We will contact you as soon as possible.",
       });
     }, 1500);
   };
@@ -49,19 +49,19 @@ const ContactSection = () => {
       <div className="container mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
           <div>
-            <h2 className="text-3xl font-bold mb-6">Liên Hệ Với Chúng Tôi</h2>
+            <h2 className="text-3xl font-bold mb-6">Contact Us</h2>
             <p className="text-muted-foreground mb-8">
-              Hãy liên hệ ngay để được tư vấn chi tiết về giải pháp giám sát giao thông thông minh
-              phù hợp với nhu cầu của bạn
+              Contact us now for detailed consultation on smart traffic monitoring solutions
+              tailored to your needs
             </p>
             
             <div className="space-y-6">
               <div>
-                <h3 className="text-xl font-semibold mb-4">Thông Tin Liên Hệ</h3>
+                <h3 className="text-xl font-semibold mb-4">Contact Information</h3>
                 <div className="space-y-4 text-muted-foreground">
                   <div className="flex items-start">
-                    <div className="font-medium w-24">Địa chỉ:</div>
-                    <div>137 Kỳ Đồng, Thanh Khê Đông, Thanh Khê, Đà Nẵng, Việt Nam</div>
+                    <div className="font-medium w-24">Address:</div>
+                    <div>137 Ky Dong, Thanh Khe Dong, Thanh Khe, Da Nang, Vietnam</div>
                   </div>
                   <div className="flex items-center">
                     <div className="font-medium w-24">Email:</div>
@@ -75,19 +75,19 @@ const ContactSection = () => {
               </div>
               
               <div>
-                <h3 className="text-xl font-semibold mb-4">Giờ Làm Việc</h3>
+                <h3 className="text-xl font-semibold mb-4">Business Hours</h3>
                 <div className="space-y-2 text-muted-foreground">
                   <div className="flex items-center">
-                    <div className="font-medium w-24">T2 - T6:</div>
+                    <div className="font-medium w-24">Mon - Fri:</div>
                     <div>8:00 - 17:30</div>
                   </div>
                   <div className="flex items-center">
-                    <div className="font-medium w-24">T7:</div>
+                    <div className="font-medium w-24">Sat:</div>
                     <div>8:00 - 12:00</div>
                   </div>
                   <div className="flex items-center">
-                    <div className="font-medium w-24">CN:</div>
-                    <div>Nghỉ</div>
+                    <div className="font-medium w-24">Sun:</div>
+                    <div>Closed</div>
                   </div>
                 </div>
               </div>
@@ -95,14 +95,14 @@ const ContactSection = () => {
           </div>
 
           <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
-            <h3 className="text-xl font-semibold mb-6">Gửi Yêu Cầu Tư Vấn</h3>
+            <h3 className="text-xl font-semibold mb-6">Send Consultation Request</h3>
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium">Họ và tên</label>
+                  <label htmlFor="name" className="text-sm font-medium">Full Name</label>
                   <Input 
                     id="name" 
-                    placeholder="Nhập họ và tên" 
+                    placeholder="Enter your name" 
                     value={formData.name}
                     onChange={handleChange}
                     required
@@ -113,7 +113,7 @@ const ContactSection = () => {
                   <Input 
                     id="email" 
                     type="email" 
-                    placeholder="Nhập địa chỉ email"
+                    placeholder="Enter your email address"
                     value={formData.email}
                     onChange={handleChange}
                     required
@@ -123,20 +123,20 @@ const ContactSection = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label htmlFor="phone" className="text-sm font-medium">Số điện thoại</label>
+                  <label htmlFor="phone" className="text-sm font-medium">Phone Number</label>
                   <Input 
                     id="phone" 
-                    placeholder="Nhập số điện thoại"
+                    placeholder="Enter your phone number"
                     value={formData.phone}
                     onChange={handleChange}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="organization" className="text-sm font-medium">Tổ chức</label>
+                  <label htmlFor="organization" className="text-sm font-medium">Organization</label>
                   <Input 
                     id="organization" 
-                    placeholder="Nhập tên tổ chức"
+                    placeholder="Enter organization name"
                     value={formData.organization}
                     onChange={handleChange}
                   />
@@ -144,10 +144,10 @@ const ContactSection = () => {
               </div>
               
               <div className="space-y-2">
-                <label htmlFor="subject" className="text-sm font-medium">Tiêu đề</label>
+                <label htmlFor="subject" className="text-sm font-medium">Subject</label>
                 <Input 
                   id="subject" 
-                  placeholder="Nhập tiêu đề"
+                  placeholder="Enter subject"
                   value={formData.subject}
                   onChange={handleChange}
                   required
@@ -155,11 +155,11 @@ const ContactSection = () => {
               </div>
               
               <div className="space-y-2">
-                <label htmlFor="message" className="text-sm font-medium">Nội dung</label>
+                <label htmlFor="message" className="text-sm font-medium">Message</label>
                 <Textarea 
                   id="message" 
                   rows={5} 
-                  placeholder="Nhập nội dung chi tiết về nhu cầu của bạn"
+                  placeholder="Enter details about your requirements"
                   value={formData.message}
                   onChange={handleChange}
                   required
@@ -167,11 +167,11 @@ const ContactSection = () => {
               </div>
               
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Đang gửi..." : "Gửi yêu cầu"}
+                {isSubmitting ? "Sending..." : "Send Request"}
               </Button>
               
               <p className="text-xs text-muted-foreground text-center">
-                Bằng cách nhấn nút gửi, bạn đồng ý với điều khoản bảo mật thông tin của chúng tôi.
+                By clicking submit, you agree to our privacy policy.
               </p>
             </form>
           </div>

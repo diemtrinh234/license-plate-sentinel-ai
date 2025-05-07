@@ -26,20 +26,20 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/hooks/useAuth";
 
-// Định nghĩa schema xác thực đăng nhập
+// Login validation schema
 const loginSchema = z.object({
-  email: z.string().email({ message: "Email không hợp lệ" }),
-  password: z.string().min(6, { message: "Mật khẩu phải có ít nhất 6 ký tự" }),
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
-// Định nghĩa schema xác thực đăng ký
+// Registration validation schema
 const registerSchema = z.object({
-  name: z.string().min(2, { message: "Tên phải có ít nhất 2 ký tự" }),
-  email: z.string().email({ message: "Email không hợp lệ" }),
-  password: z.string().min(6, { message: "Mật khẩu phải có ít nhất 6 ký tự" }),
-  confirmPassword: z.string().min(6, { message: "Mật khẩu phải có ít nhất 6 ký tự" }),
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Mật khẩu không khớp",
+  message: "Passwords do not match",
   path: ["confirmPassword"],
 });
 
@@ -52,7 +52,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const { login, register } = useAuth();
 
-  // Form login
+  // Login form
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -61,7 +61,7 @@ const Auth = () => {
     },
   });
 
-  // Form đăng ký
+  // Registration form
   const registerForm = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -72,7 +72,7 @@ const Auth = () => {
     },
   });
 
-  // Xử lý đăng nhập
+  // Login handler
   const onLoginSubmit = (values: LoginFormValues) => {
     setIsLoading(true);
     
@@ -80,14 +80,14 @@ const Auth = () => {
       setIsLoading(false);
       login(values.email);
       toast({
-        title: "Đăng nhập thành công",
-        description: "Chào mừng bạn quay trở lại!",
+        title: "Login successful",
+        description: "Welcome back!",
       });
       navigate("/dashboard");
     }, 1500);
   };
 
-  // Xử lý đăng ký
+  // Registration handler
   const onRegisterSubmit = (values: RegisterFormValues) => {
     setIsLoading(true);
     
@@ -95,8 +95,8 @@ const Auth = () => {
       setIsLoading(false);
       register(values.email, values.name);
       toast({
-        title: "Đăng ký thành công",
-        description: "Tài khoản của bạn đã được tạo thành công!",
+        title: "Registration successful",
+        description: "Your account has been created successfully!",
       });
       navigate("/dashboard");
     }, 1500);
@@ -107,14 +107,14 @@ const Auth = () => {
       <div className="w-full max-w-md">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Hệ thống giám sát giao thông</CardTitle>
-            <CardDescription>Đăng nhập để truy cập bảng điều khiển</CardDescription>
+            <CardTitle className="text-2xl">Traffic Monitoring System</CardTitle>
+            <CardDescription>Sign in to access the dashboard</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login">
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Đăng nhập</TabsTrigger>
-                <TabsTrigger value="register">Đăng ký</TabsTrigger>
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
               
               <TabsContent value="login">
@@ -139,7 +139,7 @@ const Auth = () => {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Mật khẩu</FormLabel>
+                          <FormLabel>Password</FormLabel>
                           <FormControl>
                             <Input type="password" placeholder="••••••" {...field} />
                           </FormControl>
@@ -149,7 +149,7 @@ const Auth = () => {
                     />
                     
                     <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
+                      {isLoading ? "Logging in..." : "Login"}
                     </Button>
                   </form>
                 </Form>
@@ -163,9 +163,9 @@ const Auth = () => {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Họ tên</FormLabel>
+                          <FormLabel>Full Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="Nguyễn Văn A" {...field} />
+                            <Input placeholder="John Doe" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -191,7 +191,7 @@ const Auth = () => {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Mật khẩu</FormLabel>
+                          <FormLabel>Password</FormLabel>
                           <FormControl>
                             <Input type="password" placeholder="••••••" {...field} />
                           </FormControl>
@@ -205,7 +205,7 @@ const Auth = () => {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Xác nhận mật khẩu</FormLabel>
+                          <FormLabel>Confirm Password</FormLabel>
                           <FormControl>
                             <Input type="password" placeholder="••••••" {...field} />
                           </FormControl>
@@ -215,7 +215,7 @@ const Auth = () => {
                     />
                     
                     <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? "Đang đăng ký..." : "Đăng ký"}
+                      {isLoading ? "Registering..." : "Register"}
                     </Button>
                   </form>
                 </Form>
