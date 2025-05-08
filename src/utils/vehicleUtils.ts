@@ -99,9 +99,13 @@ export const getVehicleInfo = (licensePlate: string): VehicleInfo | null => {
 // Function to get appropriate fine amount for violation type
 export const getViolationFine = (violationType: string, severity?: string): number => {
   if (violationType === "Chạy quá tốc độ" && severity) {
-    return violationFines["Chạy quá tốc độ"][severity as keyof typeof violationFines["Chạy quá tốc độ"]];
+    const speedFines = violationFines["Chạy quá tốc độ"] as Record<string, number>;
+    return speedFines[severity] || 0;
   }
-  return violationFines[violationType as keyof typeof violationFines] || 0;
+  
+  // Make sure we're returning a number even for non-speeding violations
+  const fine = violationFines[violationType as keyof typeof violationFines];
+  return typeof fine === "number" ? fine : 0;
 };
 
 // Function to simulate violation detection from license plate scanning
