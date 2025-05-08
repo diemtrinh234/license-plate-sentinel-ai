@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -507,7 +506,7 @@ const Dashboard = () => {
                 {selectedPlate && (
                   <div className="mt-4 p-4 bg-secondary/30 rounded-lg">
                     <h3 className="text-lg font-medium mb-2">Results for: {selectedPlate}</h3>
-                    <ViolationHistory plate={selectedPlate} />
+                    <ViolationHistory licensePlate={selectedPlate} />
                   </div>
                 )}
               </CardContent>
