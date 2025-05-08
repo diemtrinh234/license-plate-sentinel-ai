@@ -17,8 +17,9 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { Input } from "@/components/ui/input";
 
-// Simulated CNN model parameters
-const cnnConfidenceThreshold = 0.85;
+// Simulated model parameters
+const detectionConfidenceThreshold = 0.75; // Minimum confidence for plate detection
+const recognitionConfidenceThreshold = 0.85; // Minimum confidence for plate recognition
 
 // Mock quality assessment values
 const qualityThresholds = {
@@ -46,6 +47,12 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [manualPlate, setManualPlate] = useState("");
   const recognitionIntervalRef = useRef<number | null>(null);
+  
+  // New states for plate detection
+  const [plateDetected, setPlateDetected] = useState(false);
+  const [plateDetectionConfidence, setPlateDetectionConfidence] = useState(0);
+  const [processingStage, setProcessingStage] = useState<'idle' | 'detecting' | 'recognizing'>('idle');
+  const [plateBox, setPlateBox] = useState<{x: number, y: number, width: number, height: number} | null>(null);
 
   // Start the camera stream
   const startCamera = async () => {
@@ -63,6 +70,11 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
         setIsScanning(true);
         setError(null);
         setUploadedImage(null); // Clear any uploaded image
+        setPlateDetected(false); // Reset plate detection state
+        setPlateDetectionConfidence(0);
+        setProcessingStage('idle');
+        setPlateBox(null);
+        
         toast({
           title: "Camera kích hoạt thành công",
           description: "Đang quét biển số xe...",
@@ -87,6 +99,10 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
       videoRef.current.srcObject = null;
       setIsScanning(false);
       setVideoLoaded(false);
+      setPlateDetected(false);
+      setPlateDetectionConfidence(0);
+      setProcessingStage('idle');
+      setPlateBox(null);
       
       // Clear recognition interval
       if (recognitionIntervalRef.current !== null) {
@@ -118,9 +134,14 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
     // Create object URL for the uploaded image
     const imageUrl = URL.createObjectURL(file);
     setUploadedImage(imageUrl);
+    setLicensePlate(null);
+    setPlateDetected(false);
+    setPlateDetectionConfidence(0);
+    setProcessingStage('idle');
+    setPlateBox(null);
     
     // Load the image
-    const img = new window.Image(); // Fixed: Use window.Image instead of just Image constructor
+    const img = new window.Image();
     img.onload = () => {
       imageRef.current = img;
       // Process the image after it's loaded
@@ -134,11 +155,98 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
     });
   };
 
-  // Process uploaded image
+  // First stage: Detect if there's a license plate in the image
+  const detectLicensePlate = (imageData: ImageData): {
+    detected: boolean; 
+    confidence: number; 
+    box?: {x: number, y: number, width: number, height: number};
+  } => {
+    // This is a simulated detection model
+    // In a real app, you'd use a trained ML model for plate detection
+    
+    // For simulation, generate a detection confidence based on image quality
+    const qualityScore = assessImageQuality(imageData);
+    
+    // Adjust probability based on quality
+    let detectionProbability = Math.min(0.98, qualityScore * 0.9 + Math.random() * 0.15);
+    
+    if (detectionProbability >= detectionConfidenceThreshold) {
+      // Simulate detected plate position - in a real app this would come from the model
+      const canvasWidth = imageData.width;
+      const canvasHeight = imageData.height;
+      
+      // Generate a box in the center-ish area of the image
+      // This simulates where a license plate might typically be found
+      const centerX = canvasWidth * (0.4 + Math.random() * 0.2); // somewhere in the middle section
+      const centerY = canvasHeight * (0.4 + Math.random() * 0.2); // somewhere in the middle section
+      
+      const boxWidth = canvasWidth * (0.2 + Math.random() * 0.15); // ~20-35% of image width
+      const boxHeight = boxWidth * (0.3 + Math.random() * 0.1); // aspect ratio ~3:1 to 4:1
+      
+      const box = {
+        x: centerX - boxWidth/2,
+        y: centerY - boxHeight/2,
+        width: boxWidth,
+        height: boxHeight
+      };
+      
+      return {
+        detected: true,
+        confidence: detectionProbability,
+        box: box
+      };
+    }
+    
+    return {
+      detected: false,
+      confidence: detectionProbability
+    };
+  };
+
+  // Second stage: Recognize text in the detected license plate
+  const recognizeLicensePlateText = (
+    plateConfidence: number,
+    qualityScore: number
+  ): { text: string | null; confidence: number } => {
+    // This is a simulated recognition model
+    // In a real app, you'd use OCR or a specialized recognition model
+    
+    // Only recognize with high enough detection confidence and quality
+    if (plateConfidence >= detectionConfidenceThreshold) {
+      // Generate a simulated recognition confidence
+      // Better quality and detection = higher recognition chance
+      const recognitionProbability = Math.min(
+        0.98, 
+        plateConfidence * 0.8 + qualityScore * 0.2 + Math.random() * 0.08
+      );
+      
+      if (recognitionProbability >= recognitionConfidenceThreshold) {
+        // Generate a random but realistic Vietnamese license plate
+        const provinces = ['43A', '51G', '92C', '74D', '38H', '43B'];
+        const province = provinces[Math.floor(Math.random() * provinces.length)];
+        const numbers = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+        const formattedNumbers = numbers.substring(0, 3) + '.' + numbers.substring(3);
+        const plate = `${province}-${formattedNumbers}`;
+        
+        return {
+          text: plate,
+          confidence: recognitionProbability
+        };
+      }
+    }
+    
+    return {
+      text: null,
+      confidence: 0
+    };
+  };
+
+  // Process uploaded image with two-stage recognition
   const processUploadedImage = () => {
     if (!imageRef.current || !canvasRef.current) return;
     
     setIsProcessing(true);
+    setProcessingStage('detecting');
     
     const img = imageRef.current;
     const canvas = canvasRef.current;
@@ -175,50 +283,83 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
       
       setImageQuality(qualityCategory);
       
-      // Simulate CNN processing time
+      // FIRST STAGE: Detect if there's a license plate in the image
       setTimeout(() => {
-        // Enhanced CNN recognition for uploaded images (with higher accuracy)
-        if (qualityScore >= qualityThresholds.poor) { // More lenient for uploaded images
-          // Simulate CNN recognition with better confidence for uploads
-          const simulatedConfidence = Math.min(0.98, qualityScore * 0.95 + Math.random() * 0.07);
+        // Detect license plate in the image
+        const plateDetection = detectLicensePlate(imageData);
+        setPlateDetected(plateDetection.detected);
+        setPlateDetectionConfidence(plateDetection.confidence);
+        
+        if (plateDetection.box) {
+          setPlateBox(plateDetection.box);
           
-          if (simulatedConfidence >= cnnConfidenceThreshold * 0.9) { // Slightly lower threshold for uploads
-            // Generate more accurate Vietnamese license plate for uploaded images
-            const provinces = ['43A', '51G', '92C', '74D', '38H', '43B'];
-            const province = provinces[Math.floor(Math.random() * provinces.length)];
-            const numbers = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
-            const formattedNumbers = numbers.substring(0, 3) + '.' + numbers.substring(3);
-            const plate = `${province}-${formattedNumbers}`;
+          // Draw bounding box on canvas if detected
+          if (context && plateDetection.detected) {
+            // Clear canvas and redraw image
+            context.drawImage(img, 0, 0, img.width, img.height);
             
-            setLicensePlate(plate);
-            setConfidence(simulatedConfidence);
+            // Draw bounding box
+            context.strokeStyle = '#10b981'; // Green color
+            context.lineWidth = 3;
+            context.strokeRect(
+              plateDetection.box.x, 
+              plateDetection.box.y, 
+              plateDetection.box.width, 
+              plateDetection.box.height
+            );
+          }
+        }
+        
+        if (plateDetection.detected) {
+          toast({
+            title: "Phát hiện biển số xe",
+            description: `Độ tin cậy: ${(plateDetection.confidence * 100).toFixed(1)}%`,
+          });
+          
+          // Move to stage 2: recognize the text
+          setProcessingStage('recognizing');
+          
+          // SECOND STAGE: Recognize the text in the detected plate
+          setTimeout(() => {
+            const recognitionResult = recognizeLicensePlateText(
+              plateDetection.confidence,
+              qualityScore
+            );
             
-            // Call the onDetection callback if provided
-            if (onDetection) {
-              onDetection(plate, simulatedConfidence);
+            if (recognitionResult.text) {
+              setLicensePlate(recognitionResult.text);
+              setConfidence(recognitionResult.confidence);
+              
+              // Call the onDetection callback if provided
+              if (onDetection) {
+                onDetection(recognitionResult.text, recognitionResult.confidence);
+              }
+              
+              toast({
+                title: "Biển số được nhận diện",
+                description: `Đã xác định biển số: ${recognitionResult.text}`,
+              });
+            } else {
+              toast({
+                variant: "destructive",
+                title: "Không thể đọc biển số",
+                description: "Hệ thống đã phát hiện biển số nhưng không thể đọc được nội dung.",
+              });
             }
             
-            toast({
-              title: "Biển số được nhận diện",
-              description: `Đã xác định biển số: ${plate}`,
-            });
-          } else {
-            toast({
-              variant: "destructive",
-              title: "Không thể nhận diện biển số",
-              description: "Chất lượng ảnh không đủ tốt hoặc không có biển số xe.",
-            });
-          }
+            setProcessingStage('idle');
+            setIsProcessing(false);
+          }, 1000);
         } else {
           toast({
             variant: "destructive",
-            title: "Chất lượng hình ảnh kém",
-            description: "Hãy tải lên ảnh rõ nét và đủ ánh sáng hơn.",
+            title: "Không phát hiện biển số xe",
+            description: "Hãy đảm bảo ảnh có chứa biển số xe và rõ nét.",
           });
+          setProcessingStage('idle');
+          setIsProcessing(false);
         }
-        
-        setIsProcessing(false);
-      }, 1500); // Longer processing time for better simulation
+      }, 1000);
     } catch (err) {
       console.error("Error processing image:", err);
       setIsProcessing(false);
@@ -230,76 +371,12 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
     }
   };
 
-  // Handle manual plate input
-  const handleManualSearch = () => {
-    if (!manualPlate || manualPlate.trim().length < 5) {
-      toast({
-        variant: "destructive",
-        title: "Biển số không hợp lệ",
-        description: "Vui lòng nhập biển số xe hợp lệ.",
-      });
-      return;
-    }
-    
-    // Format the manual input to match plate format (if needed)
-    let formattedPlate = manualPlate.trim().toUpperCase();
-    
-    // Simple regex validation for Vietnamese license plate
-    const plateRegex = /^(\d{2}[A-Z]|\d{2}-\d{3}|\d{2}[A-Z]-\d{3}|\d{2}[A-Z]-\d{3}\.\d{2})$/;
-    if (!plateRegex.test(formattedPlate) && !formattedPlate.includes('-')) {
-      // Try to format it properly
-      if (formattedPlate.length >= 5) {
-        const province = formattedPlate.substring(0, 3);
-        const numbers = formattedPlate.substring(3);
-        formattedPlate = `${province}-${numbers}`;
-      }
-    }
-    
-    setLicensePlate(formattedPlate);
-    setConfidence(0.9); // High confidence for manual input
-    setImageQuality('good');
-    
-    // Call the onDetection callback if provided
-    if (onDetection) {
-      onDetection(formattedPlate, 0.9);
-    }
-    
-    toast({
-      title: "Biển số đã nhập",
-      description: `Đang kiểm tra biển số: ${formattedPlate}`,
-    });
-  };
-
-  // Assess image quality
-  const assessImageQuality = (imageData: ImageData): number => {
-    // This is a simulated quality assessment
-    // In a real app, you would analyze contrast, brightness, blur, etc.
-    
-    // Simulate quality assessment based on image properties
-    // For example, checking brightness, contrast, blur level, etc.
-    const data = imageData.data;
-    
-    // Calculate average brightness
-    let brightness = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      brightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
-    }
-    brightness /= (data.length / 4);
-    
-    // Normalize brightness (0-255) to quality score (0-1)
-    // This is simplified - a real implementation would be more complex
-    const normalizedBrightness = brightness / 255;
-    
-    // Return a quality score (0-1)
-    // This is a very simplified approach
-    return Math.min(1, normalizedBrightness * 1.5);
-  };
-
-  // Simulate CNN recognition with quality assessment
-  const recognizeLicensePlate = () => {
+  // Recognize license plate from video with two-stage model
+  const recognizeLicensePlateFromVideo = () => {
     if (!isScanning || !videoRef.current || !canvasRef.current || isProcessing || !videoLoaded) return;
     
     setIsProcessing(true);
+    setProcessingStage('detecting');
     
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -340,67 +417,164 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
       
       setImageQuality(qualityCategory);
       
-      // Simulate CNN processing time
+      // FIRST STAGE: Detect if there's a license plate in the image
       setTimeout(() => {
-        // Only proceed if quality is sufficient
-        if (qualityScore >= qualityThresholds.medium) {
-          // Simulate CNN recognition
-          // In a real app, you would pass the image to a trained CNN model
-          
-          // Generate a simulated confidence score based on quality
-          // Better quality = more likely to have higher confidence
-          const simulatedConfidence = Math.min(0.98, qualityScore * 0.9 + Math.random() * 0.1);
-          
-          // Only accept results with high enough confidence
-          if (simulatedConfidence >= cnnConfidenceThreshold) {
-            // Generate a random but realistic Vietnamese license plate
-            // In real app, this would be the output from the CNN
-            const provinces = ['43A', '51G', '92C', '74D', '38H', '43B'];
-            const province = provinces[Math.floor(Math.random() * provinces.length)];
-            const numbers = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
-            const formattedNumbers = numbers.substring(0, 3) + '.' + numbers.substring(3);
-            const plate = `${province}-${formattedNumbers}`;
-            
-            setLicensePlate(plate);
-            setConfidence(simulatedConfidence);
-            
-            // Call the onDetection callback if provided
-            if (onDetection) {
-              onDetection(plate, simulatedConfidence);
-            }
-            
-            toast({
-              title: "Biển số được nhận diện",
-              description: `Đã xác định biển số: ${plate}`,
-            });
-            
-            // Stop recognition after successful detection
-            if (recognitionIntervalRef.current !== null) {
-              window.clearInterval(recognitionIntervalRef.current);
-              recognitionIntervalRef.current = null;
-            }
-          } else {
-            console.log(`Recognition confidence too low: ${(simulatedConfidence * 100).toFixed(2)}%`);
-          }
-        } else {
-          console.log(`Image quality too low for accurate recognition: ${(qualityScore * 100).toFixed(2)}%`);
-          
-          // If quality is poor, show guidance toast
-          if (qualityCategory === 'poor') {
-            toast({
-              variant: "destructive",
-              title: "Chất lượng hình ảnh kém",
-              description: "Hãy đảm bảo ánh sáng tốt và camera đủ gần với biển số.",
-            });
-          }
+        // Detect license plate in the frame
+        const plateDetection = detectLicensePlate(imageData);
+        setPlateDetected(plateDetection.detected);
+        setPlateDetectionConfidence(plateDetection.confidence);
+        
+        if (plateDetection.box) {
+          setPlateBox(plateDetection.box);
         }
         
-        setIsProcessing(false);
-      }, 1000); // Simulate processing delay
+        if (plateDetection.detected) {
+          console.log(`License plate detected with confidence: ${(plateDetection.confidence * 100).toFixed(1)}%`);
+          
+          // Move to stage 2: recognize the text
+          setProcessingStage('recognizing');
+          
+          // Draw bounding box on video overlay if detected
+          if (context && plateDetection.box && plateDetection.detected) {
+            // Draw detection box
+            context.lineWidth = 3;
+            context.strokeStyle = '#10b981'; // Green color
+            context.strokeRect(
+              plateDetection.box.x, 
+              plateDetection.box.y, 
+              plateDetection.box.width, 
+              plateDetection.box.height
+            );
+            
+            // Add detection confidence text
+            context.font = '16px sans-serif';
+            context.fillStyle = '#10b981';
+            context.fillText(
+              `Detection: ${(plateDetection.confidence * 100).toFixed(1)}%`,
+              plateDetection.box.x,
+              plateDetection.box.y - 10
+            );
+          }
+          
+          // SECOND STAGE: Recognize the text in the detected plate
+          setTimeout(() => {
+            if (qualityScore >= qualityThresholds.medium) {
+              const recognitionResult = recognizeLicensePlateText(
+                plateDetection.confidence,
+                qualityScore
+              );
+              
+              if (recognitionResult.text) {
+                setLicensePlate(recognitionResult.text);
+                setConfidence(recognitionResult.confidence);
+                
+                // Call the onDetection callback if provided
+                if (onDetection) {
+                  onDetection(recognitionResult.text, recognitionResult.confidence);
+                }
+                
+                toast({
+                  title: "Biển số được nhận diện",
+                  description: `Đã xác định biển số: ${recognitionResult.text}`,
+                });
+                
+                // Stop recognition after successful detection
+                if (recognitionIntervalRef.current !== null) {
+                  window.clearInterval(recognitionIntervalRef.current);
+                  recognitionIntervalRef.current = null;
+                }
+              }
+            } else {
+              console.log(`Image quality too low for accurate recognition: ${(qualityScore * 100).toFixed(2)}%`);
+              
+              // If quality is poor, show guidance toast
+              if (qualityCategory === 'poor') {
+                toast({
+                  variant: "destructive",
+                  title: "Chất lượng hình ảnh kém",
+                  description: "Hãy đảm bảo ánh sáng tốt và camera đủ gần với biển số.",
+                });
+              }
+            }
+            
+            setProcessingStage('idle');
+            setIsProcessing(false);
+          }, 500);
+        } else {
+          console.log("No license plate detected in this frame");
+          setProcessingStage('idle');
+          setIsProcessing(false);
+        }
+      }, 500);
     } catch (err) {
       console.error("Error processing image:", err);
       setIsProcessing(false);
     }
+  };
+
+  // Handle manual plate input
+  const handleManualSearch = () => {
+    if (!manualPlate || manualPlate.trim().length < 5) {
+      toast({
+        variant: "destructive",
+        title: "Biển số không hợp lệ",
+        description: "Vui lòng nhập biển số xe hợp lệ.",
+      });
+      return;
+    }
+    
+    // Format the manual input to match plate format (if needed)
+    let formattedPlate = manualPlate.trim().toUpperCase();
+    
+    // Simple regex validation for Vietnamese license plate
+    const plateRegex = /^(\d{2}[A-Z]|\d{2}-\d{3}|\d{2}[A-Z]-\d{3}|\d{2}[A-Z]-\d{3}\.\d{2})$/;
+    if (!plateRegex.test(formattedPlate) && !formattedPlate.includes('-')) {
+      // Try to format it properly
+      if (formattedPlate.length >= 5) {
+        const province = formattedPlate.substring(0, 3);
+        const numbers = formattedPlate.substring(3);
+        formattedPlate = `${province}-${numbers}`;
+      }
+    }
+    
+    setLicensePlate(formattedPlate);
+    setConfidence(0.9); // High confidence for manual input
+    setImageQuality('good');
+    setPlateDetected(true); // Assume plate is valid for manual input
+    setPlateDetectionConfidence(1.0);
+    
+    // Call the onDetection callback if provided
+    if (onDetection) {
+      onDetection(formattedPlate, 0.9);
+    }
+    
+    toast({
+      title: "Biển số đã nhập",
+      description: `Đang kiểm tra biển số: ${formattedPlate}`,
+    });
+  };
+
+  // Assess image quality
+  const assessImageQuality = (imageData: ImageData): number => {
+    // This is a simulated quality assessment
+    // In a real app, you would analyze contrast, brightness, blur, etc.
+    
+    // Simulate quality assessment based on image properties
+    const data = imageData.data;
+    
+    // Calculate average brightness
+    let brightness = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      brightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
+    }
+    brightness /= (data.length / 4);
+    
+    // Normalize brightness (0-255) to quality score (0-1)
+    const normalizedBrightness = brightness / 255;
+    
+    // Return a quality score (0-1)
+    // This is a very simplified approach
+    return Math.min(1, normalizedBrightness * 1.5);
   };
 
   // Toggle full screen mode for the camera view
@@ -413,11 +587,19 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
     setLicensePlate(null);
     setConfidence(0);
     setImageQuality(null);
-    setUploadedImage(null);
+    setPlateDetected(false);
+    setPlateDetectionConfidence(0);
+    setPlateBox(null);
+    setProcessingStage('idle');
     
-    // Start continuous recognition again if camera is on
-    if (isScanning && recognitionIntervalRef.current === null) {
-      recognitionIntervalRef.current = window.setInterval(recognizeLicensePlate, 2000);
+    if (uploadedImage) {
+      // If we have an uploaded image, process it again
+      processUploadedImage();
+    } else if (isScanning) {
+      // If camera is active, restart continuous recognition
+      if (recognitionIntervalRef.current === null) {
+        recognitionIntervalRef.current = window.setInterval(recognizeLicensePlateFromVideo, 2000);
+      }
     }
   };
 
@@ -440,10 +622,10 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
       }
       
       // Start a new recognition interval
-      recognitionIntervalRef.current = window.setInterval(recognizeLicensePlate, 2000);
+      recognitionIntervalRef.current = window.setInterval(recognizeLicensePlateFromVideo, 2000);
       
       // Call recognition once immediately
-      recognizeLicensePlate();
+      recognizeLicensePlateFromVideo();
     }
     
     return () => {
@@ -533,26 +715,51 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
           {/* Canvas for image processing (hidden) */}
           <canvas ref={canvasRef} className="hidden" />
           
-          {/* License plate detection overlay */}
+          {/* License plate detection overlay for camera mode */}
           {isScanning && !licensePlate && (
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <div className="w-64 h-16 border-2 border-primary rounded-md flex items-center justify-center mb-2">
-                <span className="text-xs text-primary font-medium">Đặt biển số xe vào khung này</span>
+                <span className="text-xs text-primary font-medium">
+                  {processingStage === 'detecting' ? 'Đang phát hiện biển số...' : 
+                   processingStage === 'recognizing' ? 'Đang nhận dạng biển số...' : 
+                   'Đặt biển số xe vào khung này'}
+                </span>
               </div>
               {isProcessing && (
                 <div className="mt-2">
                   <RefreshCw className="animate-spin text-primary" size={24} />
                 </div>
               )}
+              
+              {/* Show detection stage information */}
+              {plateDetected && !licensePlate && (
+                <div className="mt-2 text-center bg-background/80 p-2 rounded-md">
+                  <p className="text-sm font-medium text-green-500">Đã phát hiện biển số xe</p>
+                  <p className="text-xs">Đang nhận dạng nội dung...</p>
+                </div>
+              )}
             </div>
           )}
           
           {/* Processing indicator for uploaded images */}
-          {uploadedImage && isProcessing && (
+          {uploadedImage && isProcessing && !licensePlate && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center bg-background/80 p-4 rounded-lg">
                 <RefreshCw className="animate-spin text-primary mb-2" size={32} />
-                <p className="text-sm font-medium">Đang xử lý ảnh...</p>
+                <p className="text-sm font-medium mb-1">
+                  {processingStage === 'detecting' ? 'Đang phát hiện biển số xe...' : 
+                   processingStage === 'recognizing' ? 'Đang nhận dạng nội dung biển số...' : 
+                   'Đang xử lý ảnh...'}
+                </p>
+                
+                {/* Show processing progress */}
+                {processingStage === 'detecting' && (
+                  <p className="text-xs text-muted-foreground">Giai đoạn 1/2: Phát hiện biển số</p>
+                )}
+                
+                {processingStage === 'recognizing' && (
+                  <p className="text-xs text-muted-foreground">Giai đoạn 2/2: Nhận dạng nội dung</p>
+                )}
               </div>
             </div>
           )}
@@ -583,9 +790,16 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
                 
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Độ tin cậy:</span>
+                    <span className="text-muted-foreground">Độ tin cậy nhận dạng:</span>
                     <Badge variant={confidence > 0.9 ? "default" : "outline"}>
                       {(confidence * 100).toFixed(1)}%
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Độ tin cậy phát hiện:</span>
+                    <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                      {(plateDetectionConfidence * 100).toFixed(1)}%
                     </Badge>
                   </div>
                   
