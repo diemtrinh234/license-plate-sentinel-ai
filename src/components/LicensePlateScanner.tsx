@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from '@/hooks/use-toast';
@@ -246,7 +245,7 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
         
         if (plateDetection.detected) {
           toast({
-            title: "Phát hiện biển số xe",
+            title: "Phát hi���n biển số xe",
             description: `Độ tin cậy: ${(plateDetection.confidence * 100).toFixed(1)}%`,
           });
           
@@ -316,7 +315,10 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
     
-    if (!context) return;
+    if (!context) {
+      setIsProcessing(false);
+      return;
+    }
     
     // Check if video has metadata loaded and dimensions are valid
     if (video.videoWidth === 0 || video.videoHeight === 0) {
@@ -565,7 +567,7 @@ const LicensePlateScanner: React.FC<LicensePlateProps> = ({ onDetection }) => {
           )}
           
           {/* Error message */}
-          <ErrorDisplay error={error} />
+          <ErrorDisplay error={error} onRetry={error && error.toLowerCase().includes('camera') ? startCamera : undefined} />
           
           {/* License plate result */}
           <PlateResult

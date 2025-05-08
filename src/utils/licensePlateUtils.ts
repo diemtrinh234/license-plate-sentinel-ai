@@ -1,4 +1,3 @@
-
 // Simulated model parameters
 export const detectionConfidenceThreshold = 0.75; // Minimum confidence for plate detection
 export const recognitionConfidenceThreshold = 0.85; // Minimum confidence for plate recognition
@@ -27,8 +26,8 @@ export const detectLicensePlate = (imageData: ImageData): {
   // For simulation, generate a detection confidence based on image quality
   const qualityScore = assessImageQuality(imageData);
   
-  // Adjust probability based on quality
-  let detectionProbability = Math.min(0.98, qualityScore * 0.9 + Math.random() * 0.15);
+  // Increase detection probability for better demo experience
+  let detectionProbability = Math.min(0.98, qualityScore * 0.9 + Math.random() * 0.2);
   
   if (detectionProbability >= detectionConfidenceThreshold) {
     // Simulate detected plate position - in a real app this would come from the model
@@ -77,11 +76,29 @@ export const recognizeLicensePlateText = (
     // Better quality and detection = higher recognition chance
     const recognitionProbability = Math.min(
       0.98, 
-      plateConfidence * 0.8 + qualityScore * 0.2 + Math.random() * 0.08
+      plateConfidence * 0.8 + qualityScore * 0.2 + Math.random() * 0.12
     );
     
     if (recognitionProbability >= recognitionConfidenceThreshold) {
       // Generate a random but realistic Vietnamese license plate
+      // Prioritize plates from the vehicle database to increase "hit" rate
+      const useSamplePlate = Math.random() > 0.3; // 70% chance to use a plate from database
+      
+      if (useSamplePlate) {
+        // Import and use the vehicle database
+        const { vehicleDatabase } = require('./vehicleUtils');
+        if (vehicleDatabase && vehicleDatabase.length > 0) {
+          const randomIndex = Math.floor(Math.random() * vehicleDatabase.length);
+          const plate = vehicleDatabase[randomIndex].licensePlate;
+          
+          return {
+            text: plate,
+            confidence: recognitionProbability
+          };
+        }
+      }
+      
+      // Otherwise generate a random plate
       const provinces = ['43A', '51G', '92C', '74D', '38H', '43B'];
       const province = provinces[Math.floor(Math.random() * provinces.length)];
       const numbers = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
@@ -116,10 +133,22 @@ export const assessImageQuality = (imageData: ImageData): number => {
   }
   brightness /= (data.length / 4);
   
-  // Normalize brightness (0-255) to quality score (0-1)
-  const normalizedBrightness = brightness / 255;
+  // Calculate contrast (simplified)
+  let minVal = 255;
+  let maxVal = 0;
   
-  // Return a quality score (0-1)
-  // This is a very simplified approach
-  return Math.min(1, normalizedBrightness * 1.5);
+  for (let i = 0; i < data.length; i += 20) { // Sample every 20th pixel for performance
+    const pixelValue = (data[i] + data[i + 1] + data[i + 2]) / 3;
+    minVal = Math.min(minVal, pixelValue);
+    maxVal = Math.max(maxVal, pixelValue);
+  }
+  
+  const contrast = Math.min(1, (maxVal - minVal) / 255);
+  
+  // Normalize brightness (0-255) to quality score (0-1) and combine with contrast
+  const normalizedBrightness = brightness / 255;
+  const qualityScore = (normalizedBrightness * 0.6) + (contrast * 0.4);
+  
+  // Slightly boost quality score for better demo experience
+  return Math.min(1, qualityScore * 1.3);
 };
