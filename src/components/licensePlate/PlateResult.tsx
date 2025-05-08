@@ -1,9 +1,13 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { ImageQuality } from '@/utils/licensePlateUtils';
+import { getVehicleInfo, detectViolation, VehicleInfo, Violation } from '@/utils/vehicleUtils';
+import VehicleInfoPanel from './VehicleInfoPanel';
+import ViolationAlert from './ViolationAlert';
+import { toast } from '@/hooks/use-toast';
 
 interface PlateResultProps {
   licensePlate: string | null;
@@ -20,12 +24,59 @@ const PlateResult: React.FC<PlateResultProps> = ({
   imageQuality, 
   onRetake 
 }) => {
+  const [vehicleInfo, setVehicleInfo] = useState<VehicleInfo | null>(null);
+  const [violation, setViolation] = useState<Violation | null>(null);
+  const [isLoadingInfo, setIsLoadingInfo] = useState(false);
+  const [isLoadingViolation, setIsLoadingViolation] = useState(false);
+
+  useEffect(() => {
+    if (licensePlate) {
+      // Look up vehicle information
+      setIsLoadingInfo(true);
+      setTimeout(() => {
+        const info = getVehicleInfo(licensePlate);
+        setVehicleInfo(info);
+        setIsLoadingInfo(false);
+        
+        if (info) {
+          toast({
+            title: "Biển số hợp lệ",
+            description: `Đã tìm thấy thông tin xe ${info.vehicleModel} của ${info.ownerName}`,
+            variant: "default"
+          });
+        } else {
+          toast({
+            title: "Biển số không tìm thấy",
+            description: "Không tìm thấy thông tin phương tiện trong hệ thống",
+            variant: "destructive"
+          });
+        }
+      }, 1000);
+      
+      // Check for violations
+      setIsLoadingViolation(true);
+      setTimeout(() => {
+        const detectedViolation = detectViolation(licensePlate);
+        setViolation(detectedViolation);
+        setIsLoadingViolation(false);
+        
+        if (detectedViolation) {
+          toast({
+            title: "Phát hiện vi phạm",
+            description: `${detectedViolation.type} tại ${detectedViolation.location}`,
+            variant: "destructive"
+          });
+        }
+      }, 1500);
+    }
+  }, [licensePlate]);
+
   if (!licensePlate) return null;
   
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-background/80 p-4">
-      <div className="bg-card border border-border rounded-lg p-4 max-w-xs w-full">
-        <div className="text-center mb-4">
+    <div className="absolute inset-0 flex flex-col bg-background/95 p-4 overflow-y-auto">
+      <div className="max-w-md mx-auto w-full">
+        <div className="text-center mb-6">
           <CheckCircle2 className="text-green-500 mx-auto mb-2" size={32} />
           <h3 className="text-lg font-medium">Biển số xe đã xác định</h3>
         </div>
@@ -65,13 +116,33 @@ const PlateResult: React.FC<PlateResultProps> = ({
           </div>
         </div>
         
+        <div className="space-y-4 mb-4">
+          <VehicleInfoPanel 
+            vehicleInfo={vehicleInfo} 
+            isLoading={isLoadingInfo} 
+          />
+          
+          <ViolationAlert 
+            violation={violation} 
+            isLoading={isLoadingViolation} 
+          />
+        </div>
+        
         <div className="flex gap-2">
           <Button 
             variant="outline" 
             className="flex-1"
             onClick={onRetake}
           >
-            Quét lại
+            Quét biển số khác
+          </Button>
+          
+          <Button 
+            variant="default" 
+            className="flex-1"
+            disabled={!vehicleInfo}
+          >
+            Xem lịch sử
           </Button>
         </div>
       </div>
