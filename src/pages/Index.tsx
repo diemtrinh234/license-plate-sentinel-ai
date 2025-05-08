@@ -61,7 +61,7 @@ const Index = () => {
       
       {/* Floating CTA */}
       {showFloatingCTA && !isAuthenticated && (
-        <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
+        <div className="fixed bottom-6 right-6 z-40 animate-fade-in">
           <div className="bg-card border border-border rounded-lg shadow-lg p-4 max-w-xs">
             <div className="flex justify-between items-start mb-3">
               <h4 className="font-semibold">Ready to get started?</h4>
