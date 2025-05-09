@@ -1,11 +1,12 @@
+
 // Simulated model parameters
-export const detectionConfidenceThreshold = 0.75; // Minimum confidence for plate detection
-export const recognitionConfidenceThreshold = 0.85; // Minimum confidence for plate recognition
+export const detectionConfidenceThreshold = 0.7; // Giảm ngưỡng để tăng khả năng phát hiện
+export const recognitionConfidenceThreshold = 0.8; // Giảm ngưỡng để tăng khả năng nhận dạng
 
 // Mock quality assessment values
 export const qualityThresholds = {
-  good: 0.8,
-  medium: 0.6,
+  good: 0.7, // Giảm ngưỡng để dễ phát hiện hơn
+  medium: 0.5,
   poor: 0
 };
 
@@ -27,7 +28,7 @@ export const detectLicensePlate = (imageData: ImageData): {
   const qualityScore = assessImageQuality(imageData);
   
   // Increase detection probability for better demo experience
-  let detectionProbability = Math.min(0.98, qualityScore * 0.9 + Math.random() * 0.2);
+  let detectionProbability = Math.min(0.98, qualityScore * 0.9 + Math.random() * 0.25); // Tăng thêm random factor
   
   if (detectionProbability >= detectionConfidenceThreshold) {
     // Simulate detected plate position - in a real app this would come from the model
@@ -36,11 +37,11 @@ export const detectLicensePlate = (imageData: ImageData): {
     
     // Generate a box in the center-ish area of the image
     // This simulates where a license plate might typically be found
-    const centerX = canvasWidth * (0.4 + Math.random() * 0.2); // somewhere in the middle section
-    const centerY = canvasHeight * (0.4 + Math.random() * 0.2); // somewhere in the middle section
+    const centerX = canvasWidth * (0.4 + Math.random() * 0.2);
+    const centerY = canvasHeight * (0.4 + Math.random() * 0.2);
     
-    const boxWidth = canvasWidth * (0.2 + Math.random() * 0.15); // ~20-35% of image width
-    const boxHeight = boxWidth * (0.3 + Math.random() * 0.1); // aspect ratio ~3:1 to 4:1
+    const boxWidth = canvasWidth * (0.2 + Math.random() * 0.15);
+    const boxHeight = boxWidth * (0.3 + Math.random() * 0.1);
     
     const box = {
       x: centerX - boxWidth/2,
@@ -76,13 +77,13 @@ export const recognizeLicensePlateText = (
     // Better quality and detection = higher recognition chance
     const recognitionProbability = Math.min(
       0.98, 
-      plateConfidence * 0.8 + qualityScore * 0.2 + Math.random() * 0.12
+      plateConfidence * 0.8 + qualityScore * 0.2 + Math.random() * 0.15 // Tăng random factor
     );
     
     if (recognitionProbability >= recognitionConfidenceThreshold) {
       // Generate a random but realistic Vietnamese license plate
       // Prioritize plates from the vehicle database to increase "hit" rate
-      const useSamplePlate = Math.random() > 0.3; // 70% chance to use a plate from database
+      const useSamplePlate = Math.random() > 0.2; // 80% chance to use a plate from database (tăng từ 70%)
       
       if (useSamplePlate) {
         // Import and use the vehicle database
@@ -150,5 +151,5 @@ export const assessImageQuality = (imageData: ImageData): number => {
   const qualityScore = (normalizedBrightness * 0.6) + (contrast * 0.4);
   
   // Slightly boost quality score for better demo experience
-  return Math.min(1, qualityScore * 1.3);
+  return Math.min(1, qualityScore * 1.5); // Tăng từ 1.3 lên 1.5
 };

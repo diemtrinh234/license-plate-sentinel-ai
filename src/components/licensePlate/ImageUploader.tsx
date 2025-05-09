@@ -1,7 +1,7 @@
 
 import React, { useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Upload, AlertCircle } from "lucide-react";
+import { Upload, AlertCircle, Image } from "lucide-react";
 import { toast } from '@/hooks/use-toast';
 
 interface ImageUploaderProps {
@@ -19,6 +19,27 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        variant: "destructive",
+        title: "Định dạng file không hỗ trợ",
+        description: "Vui lòng tải lên file hình ảnh (JPG, PNG, etc.)",
+      });
+      return;
+    }
+    
+    // Check file size (limit to 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "File quá lớn",
+        description: "Vui lòng tải lên hình ảnh nhỏ hơn 10MB",
+      });
+      return;
+    }
+    
     onImageUpload(file);
   };
 
