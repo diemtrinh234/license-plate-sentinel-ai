@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      license_plate_scans: {
+        Row: {
+          confidence: number
+          device_type: string | null
+          id: string
+          image_url: string | null
+          location_lat: number | null
+          location_lng: number | null
+          plate_number: string
+          scanned_at: string
+          user_id: string | null
+        }
+        Insert: {
+          confidence: number
+          device_type?: string | null
+          id?: string
+          image_url?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          plate_number: string
+          scanned_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          confidence?: number
+          device_type?: string | null
+          id?: string
+          image_url?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          plate_number?: string
+          scanned_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
