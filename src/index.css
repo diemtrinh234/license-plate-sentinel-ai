@@ -84,3 +84,26 @@
 .section {
   @apply py-20 px-4 md:px-8;
 }
+
+/* Leaflet custom marker styles */
+.custom-marker {
+  background: transparent;
+  border: none;
+}
+
+/* Fix Leaflet default marker icons */
+.leaflet-container {
+  font-family: inherit;
+}
+
+.leaflet-popup-content-wrapper {
+  @apply bg-card border border-border rounded-lg shadow-lg;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+}
+
+.leaflet-popup-tip {
+  @apply bg-card;
+}
