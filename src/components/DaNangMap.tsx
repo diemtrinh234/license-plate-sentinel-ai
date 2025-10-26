@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { AlertCircle } from 'lucide-react';
@@ -25,50 +24,90 @@ interface DaNangMapProps {
   detectedPlate?: string | null;
 }
 
-// Tạo custom icon cho marker
-const createViolationIcon = (isHighlighted: boolean = false) => {
-  return L.divIcon({
-    className: 'custom-marker',
-    html: `
-      <div class="flex items-center justify-center w-8 h-8 bg-red-500 text-white rounded-full shadow-lg ${isHighlighted ? 'ring-4 ring-yellow-400 animate-pulse' : ''}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" x2="12" y1="8" y2="12"/>
-          <line x1="12" x2="12.01" y1="16" y2="16"/>
-        </svg>
-      </div>
-    `,
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32],
-  });
-};
-
-// Component để tự động fly đến vị trí khi phát hiện biển số
-const FlyToLocation: React.FC<{ location: ViolationLocation | null }> = ({ location }) => {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (location) {
-      map.flyTo([location.lat, location.lng], 15, {
-        duration: 1.5,
-      });
-    }
-  }, [location, map]);
-  
-  return null;
-};
-
 const DaNangMap: React.FC<DaNangMapProps> = ({ detectedPlate }) => {
-  const [highlightedLocation, setHighlightedLocation] = useState<ViolationLocation | null>(null);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<L.Map | null>(null);
+  const markers = useRef<L.Marker[]>([]);
 
-  // Tìm vị trí của biển số được phát hiện
   useEffect(() => {
-    if (detectedPlate) {
-      const location = violationLocations.find(loc => loc.plate === detectedPlate);
-      setHighlightedLocation(location || null);
-    } else {
-      setHighlightedLocation(null);
+    if (!mapContainer.current || map.current) return;
+
+    // Khởi tạo bản đồ
+    map.current = L.map(mapContainer.current).setView([16.0544, 108.2022], 13);
+
+    // Thêm tile layer từ OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(map.current);
+
+    // Thêm các marker
+    addMarkers();
+
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
+  }, []);
+
+  const addMarkers = () => {
+    if (!map.current) return;
+
+    // Xóa markers cũ
+    markers.current.forEach(marker => marker.remove());
+    markers.current = [];
+
+    // Thêm markers mới
+    violationLocations.forEach(location => {
+      if (!map.current) return;
+
+      const isHighlighted = detectedPlate === location.plate;
+
+      // Tạo custom icon
+      const icon = L.divIcon({
+        className: 'custom-marker',
+        html: `
+          <div class="flex items-center justify-center w-8 h-8 bg-red-500 text-white rounded-full shadow-lg ${isHighlighted ? 'ring-4 ring-yellow-400 animate-pulse' : ''}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" x2="12" y1="8" y2="12"/>
+              <line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32],
+      });
+
+      // Tạo marker
+      const marker = L.marker([location.lat, location.lng], { icon })
+        .bindPopup(`
+          <div class="p-2">
+            <div class="font-bold text-sm">${location.plate}</div>
+            <div class="text-xs text-red-500">${location.type}</div>
+          </div>
+        `)
+        .addTo(map.current);
+
+      // Nếu là biển số được phát hiện, mở popup và fly đến vị trí
+      if (isHighlighted) {
+        marker.openPopup();
+        map.current.flyTo([location.lat, location.lng], 15, {
+          duration: 1.5,
+        });
+      }
+
+      markers.current.push(marker);
+    });
+  };
+
+  // Cập nhật markers khi detectedPlate thay đổi
+  useEffect(() => {
+    if (map.current) {
+      addMarkers();
     }
   }, [detectedPlate]);
 
@@ -82,37 +121,10 @@ const DaNangMap: React.FC<DaNangMapProps> = ({ detectedPlate }) => {
       </div>
       
       <div className="relative aspect-[16/9]">
-        <MapContainer
-          center={[16.0544, 108.2022]}
-          zoom={13}
+        <div 
+          ref={mapContainer} 
           className="w-full h-full z-0"
-          style={{ height: '100%', width: '100%' }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          
-          {violationLocations.map((location) => {
-            const isHighlighted = detectedPlate === location.plate;
-            return (
-              <Marker
-                key={location.id}
-                position={[location.lat, location.lng]}
-                icon={createViolationIcon(isHighlighted)}
-              >
-                <Popup>
-                  <div className="p-2">
-                    <div className="font-bold text-sm">{location.plate}</div>
-                    <div className="text-xs text-red-500">{location.type}</div>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-          
-          {highlightedLocation && <FlyToLocation location={highlightedLocation} />}
-        </MapContainer>
+        />
       </div>
       
       <div className="p-3 bg-muted/40 border-t border-border">
