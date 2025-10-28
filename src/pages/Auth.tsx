@@ -25,21 +25,42 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/hooks/useAuth";
+import { Eye, EyeOff } from "lucide-react";
 
 // Login validation schema
 const loginSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  email: z.string()
+    .trim()
+    .toLowerCase()
+    .email({ message: "Địa chỉ email không hợp lệ" })
+    .max(255, { message: "Email không được vượt quá 255 ký tự" }),
+  password: z.string()
+    .min(8, { message: "Mật khẩu phải có ít nhất 8 ký tự" })
+    .max(128, { message: "Mật khẩu không được vượt quá 128 ký tự" }),
 });
 
-// Registration validation schema
+// Registration validation schema with international standards
 const registerSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  email: z.string().email({ message: "Invalid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  name: z.string()
+    .trim()
+    .min(2, { message: "Tên phải có ít nhất 2 ký tự" })
+    .max(100, { message: "Tên không được vượt quá 100 ký tự" })
+    .regex(/^[\p{L}\s'-]+$/u, { message: "Tên chỉ được chứa chữ cái, khoảng trắng và dấu gạch ngang" }),
+  email: z.string()
+    .trim()
+    .toLowerCase()
+    .email({ message: "Địa chỉ email không hợp lệ" })
+    .max(255, { message: "Email không được vượt quá 255 ký tự" }),
+  password: z.string()
+    .min(8, { message: "Mật khẩu phải có ít nhất 8 ký tự" })
+    .max(128, { message: "Mật khẩu không được vượt quá 128 ký tự" })
+    .regex(/[A-Z]/, { message: "Mật khẩu phải có ít nhất 1 chữ hoa" })
+    .regex(/[a-z]/, { message: "Mật khẩu phải có ít nhất 1 chữ thường" })
+    .regex(/[0-9]/, { message: "Mật khẩu phải có ít nhất 1 chữ số" })
+    .regex(/[^A-Za-z0-9]/, { message: "Mật khẩu phải có ít nhất 1 ký tự đặc biệt" }),
+  confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
+  message: "Mật khẩu xác nhận không khớp",
   path: ["confirmPassword"],
 });
 
@@ -48,6 +69,9 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { login, register } = useAuth();
@@ -143,14 +167,14 @@ const Auth = () => {
       <div className="w-full max-w-md">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Traffic Monitoring System</CardTitle>
-            <CardDescription>Sign in to access the dashboard</CardDescription>
+            <CardTitle className="text-2xl">Hệ thống Giám sát Giao thông</CardTitle>
+            <CardDescription>Đăng nhập để truy cập bảng điều khiển</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login">
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
+                <TabsTrigger value="login">Đăng nhập</TabsTrigger>
+                <TabsTrigger value="register">Đăng ký</TabsTrigger>
               </TabsList>
               
               <TabsContent value="login">
@@ -163,7 +187,12 @@ const Auth = () => {
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="you@example.com" {...field} />
+                            <Input 
+                              type="email"
+                              placeholder="you@example.com" 
+                              autoComplete="email"
+                              {...field} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -175,9 +204,29 @@ const Auth = () => {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>Mật khẩu</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="••••••" {...field} />
+                            <div className="relative">
+                              <Input 
+                                type={showLoginPassword ? "text" : "password"} 
+                                placeholder="••••••••" 
+                                autoComplete="current-password"
+                                {...field} 
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                                onClick={() => setShowLoginPassword(!showLoginPassword)}
+                              >
+                                {showLoginPassword ? (
+                                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <Eye className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </Button>
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -185,7 +234,7 @@ const Auth = () => {
                     />
                     
                     <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? "Logging in..." : "Login"}
+                      {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
                     </Button>
                   </form>
                 </Form>
@@ -199,9 +248,9 @@ const Auth = () => {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Full Name</FormLabel>
+                          <FormLabel>Họ và tên</FormLabel>
                           <FormControl>
-                            <Input placeholder="John Doe" {...field} />
+                            <Input placeholder="Nguyễn Văn A" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -215,7 +264,12 @@ const Auth = () => {
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="you@example.com" {...field} />
+                            <Input 
+                              type="email"
+                              placeholder="you@example.com" 
+                              autoComplete="email"
+                              {...field} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -227,10 +281,33 @@ const Auth = () => {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>Mật khẩu</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="••••••" {...field} />
+                            <div className="relative">
+                              <Input 
+                                type={showRegisterPassword ? "text" : "password"} 
+                                placeholder="••••••••" 
+                                autoComplete="new-password"
+                                {...field} 
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                                onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                              >
+                                {showRegisterPassword ? (
+                                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <Eye className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </Button>
+                            </div>
                           </FormControl>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt
+                          </p>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -241,9 +318,29 @@ const Auth = () => {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Confirm Password</FormLabel>
+                          <FormLabel>Xác nhận mật khẩu</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="••••••" {...field} />
+                            <div className="relative">
+                              <Input 
+                                type={showConfirmPassword ? "text" : "password"} 
+                                placeholder="••••••••" 
+                                autoComplete="new-password"
+                                {...field} 
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              >
+                                {showConfirmPassword ? (
+                                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <Eye className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </Button>
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -251,7 +348,7 @@ const Auth = () => {
                     />
                     
                     <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? "Registering..." : "Register"}
+                      {isLoading ? "Đang đăng ký..." : "Đăng ký"}
                     </Button>
                   </form>
                 </Form>
@@ -260,7 +357,7 @@ const Auth = () => {
           </CardContent>
           <CardFooter className="text-center">
             <p className="text-sm text-muted-foreground w-full">
-              Powered by AI Smart Traffic Monitoring System
+              Hỗ trợ bởi Hệ thống Giám sát Giao thông Thông minh AI
             </p>
           </CardFooter>
         </Card>
