@@ -24,7 +24,7 @@ export type Database = {
           location_lng: number | null
           plate_number: string
           scanned_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           confidence: number
@@ -35,7 +35,7 @@ export type Database = {
           location_lng?: number | null
           plate_number: string
           scanned_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           confidence?: number
@@ -46,7 +46,7 @@ export type Database = {
           location_lng?: number | null
           plate_number?: string
           scanned_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }

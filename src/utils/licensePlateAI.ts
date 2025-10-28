@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
 
 export interface RecognitionResult {
   success: boolean;
@@ -7,20 +8,40 @@ export interface RecognitionResult {
   message?: string;
 }
 
+const scanDataSchema = z.object({
+  plateNumber: z.string()
+    .min(1, "Plate number is required")
+    .max(20, "Plate number too long")
+    .regex(/^[A-Z0-9-]+$/, "Invalid plate format"),
+  confidence: z.number()
+    .min(0, "Confidence must be at least 0")
+    .max(1, "Confidence must be at most 1"),
+  deviceType: z.enum(['web', 'mobile', 'camera'], {
+    errorMap: () => ({ message: "Invalid device type" })
+  }),
+});
+
 export async function recognizePlateWithAI(
   canvas: HTMLCanvasElement
 ): Promise<RecognitionResult> {
   try {
-    // Convert canvas to base64 image
     const imageBase64 = canvas.toDataURL('image/jpeg', 0.9);
+    const { data: { session } } = await supabase.auth.getSession();
 
-    // Call edge function
+    if (!session) {
+      return {
+        success: false,
+        plate: null,
+        confidence: 0,
+        message: 'Authentication required'
+      };
+    }
+
     const { data, error } = await supabase.functions.invoke('recognize-license-plate', {
       body: { imageBase64 }
     });
 
     if (error) {
-      console.error('Edge function error:', error);
       return {
         success: false,
         plate: null,
@@ -31,7 +52,6 @@ export async function recognizePlateWithAI(
 
     return data as RecognitionResult;
   } catch (error) {
-    console.error('Recognition error:', error);
     return {
       success: false,
       plate: null,
@@ -47,10 +67,16 @@ export async function saveScanToDatabase(
   deviceType: string = 'web'
 ): Promise<boolean> {
   try {
+    // Validate input data
+    const validated = scanDataSchema.parse({
+      plateNumber: plateNumber.toUpperCase(),
+      confidence,
+      deviceType,
+    });
+
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      console.error('User not authenticated');
       return false;
     }
 
@@ -58,20 +84,21 @@ export async function saveScanToDatabase(
       .from('license_plate_scans')
       .insert({
         user_id: user.id,
-        plate_number: plateNumber,
-        confidence: confidence,
-        device_type: deviceType,
+        plate_number: validated.plateNumber,
+        confidence: validated.confidence,
+        device_type: validated.deviceType,
         scanned_at: new Date().toISOString()
       });
 
     if (error) {
-      console.error('Database save error:', error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Save scan error:', error);
+    if (error instanceof z.ZodError) {
+      console.error('Validation error:', error.errors);
+    }
     return false;
   }
 }

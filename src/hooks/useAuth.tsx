@@ -1,62 +1,81 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-type User = {
-  email: string;
-  name: string;
-} | null;
+import { supabase } from "@/integrations/supabase/client";
+import { User, Session } from "@supabase/supabase-js";
 
 interface AuthContextType {
-  user: User;
-  login: (email: string) => void;
-  logout: () => void;
-  register: (email: string, name: string) => void;
+  user: User | null;
+  session: Session | null;
+  login: (email: string, password: string) => Promise<{ error: Error | null }>;
+  logout: () => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
 
-  // Kiểm tra người dùng đã đăng nhập từ localStorage khi trang web tải
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
+    );
+
+    // Then check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Đăng nhập
-  const login = (email: string) => {
-    // Trong một ứng dụng thực tế, bạn sẽ gọi API ở đây
-    const userData = {
+  const login = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      name: email.split('@')[0], // Lấy tên từ email cho đơn giản
-    };
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
+      password,
+    });
+    
+    if (error) {
+      return { error };
+    }
+    
+    return { error: null };
   };
 
-  // Đăng ký
-  const register = (email: string, name: string) => {
-    // Trong một ứng dụng thực tế, bạn sẽ gọi API ở đây
-    const userData = { email, name };
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
+  const register = async (email: string, password: string, name: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/`,
+        data: {
+          name: name,
+        }
+      }
+    });
+    
+    if (error) {
+      return { error };
+    }
+    
+    return { error: null };
   };
 
-  // Đăng xuất
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
+  const logout = async () => {
+    await supabase.auth.signOut();
     navigate("/auth");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, session, login, logout, register, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

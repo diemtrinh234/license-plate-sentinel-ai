@@ -22,7 +22,7 @@ const Navbar = () => {
               </Link>
               <div className="hidden md:flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">
-                  Hello, <span className="font-medium text-foreground">{user?.name}</span>
+                  Hello, <span className="font-medium text-foreground">{user?.user_metadata?.name || user?.email?.split('@')[0]}</span>
                 </span>
                 <Button variant="outline" size="sm" onClick={logout}>
                   Sign Out

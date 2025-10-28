@@ -73,33 +73,69 @@ const Auth = () => {
   });
 
   // Login handler
-  const onLoginSubmit = (values: LoginFormValues) => {
-    setIsLoading(true);
-    
-    setTimeout(() => {
-      setIsLoading(false);
-      login(values.email);
+  const onLoginSubmit = async (values: LoginFormValues) => {
+    try {
+      setIsLoading(true);
+      const { error } = await login(values.email, values.password);
+      
+      if (error) {
+        toast({
+          title: "Lỗi đăng nhập",
+          description: error.message === "Invalid login credentials" 
+            ? "Email hoặc mật khẩu không đúng" 
+            : error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       toast({
-        title: "Login successful",
-        description: "Welcome back!",
+        title: "Đăng nhập thành công",
+        description: "Chào mừng bạn quay trở lại!",
       });
       navigate("/dashboard");
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Đã có lỗi xảy ra khi đăng nhập",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Registration handler
-  const onRegisterSubmit = (values: RegisterFormValues) => {
-    setIsLoading(true);
-    
-    setTimeout(() => {
-      setIsLoading(false);
-      register(values.email, values.name);
+  const onRegisterSubmit = async (values: RegisterFormValues) => {
+    try {
+      setIsLoading(true);
+      const { error } = await register(values.email, values.password, values.name);
+      
+      if (error) {
+        toast({
+          title: "Lỗi đăng ký",
+          description: error.message === "User already registered" 
+            ? "Email này đã được đăng ký" 
+            : error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       toast({
-        title: "Registration successful",
-        description: "Your account has been created successfully!",
+        title: "Đăng ký thành công",
+        description: "Tài khoản của bạn đã được tạo!",
       });
       navigate("/dashboard");
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Đã có lỗi xảy ra khi đăng ký",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
