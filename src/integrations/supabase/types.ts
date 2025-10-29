@@ -50,6 +50,42 @@ export type Database = {
         }
         Relationships: []
       }
+      violations: {
+        Row: {
+          created_at: string
+          description: string | null
+          fine_amount: number | null
+          id: string
+          location: string | null
+          plate_number: string
+          status: string | null
+          violation_date: string
+          violation_type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          fine_amount?: number | null
+          id?: string
+          location?: string | null
+          plate_number: string
+          status?: string | null
+          violation_date: string
+          violation_type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          fine_amount?: number | null
+          id?: string
+          location?: string | null
+          plate_number?: string
+          status?: string | null
+          violation_date?: string
+          violation_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
