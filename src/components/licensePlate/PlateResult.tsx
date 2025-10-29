@@ -1,14 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, AlertTriangle, ShieldCheck, ShieldAlert } from "lucide-react";
+import { CheckCircle2, ShieldCheck, ShieldAlert } from "lucide-react";
 import { ImageQuality } from '@/utils/licensePlateUtils';
-import { getVehicleInfo, VehicleInfo } from '@/utils/vehicleUtils';
-import { checkViolations, formatCurrency, formatDate, ViolationCheckResult } from '@/utils/violationUtils';
 import VehicleInfoPanel from './VehicleInfoPanel';
-import { toast } from '@/hooks/use-toast';
+import { useViolationCheck } from '@/hooks/useViolationCheck';
+import { formatCurrency } from '@/utils/formatUtils';
 
 interface PlateResultProps {
   licensePlate: string | null;
@@ -25,57 +24,8 @@ const PlateResult: React.FC<PlateResultProps> = ({
   imageQuality, 
   onRetake 
 }) => {
-  const [vehicleInfo, setVehicleInfo] = useState<VehicleInfo | null>(null);
-  const [violationResult, setViolationResult] = useState<ViolationCheckResult | null>(null);
-  const [isLoadingInfo, setIsLoadingInfo] = useState(false);
-  const [isLoadingViolation, setIsLoadingViolation] = useState(false);
-
-  useEffect(() => {
-    if (licensePlate) {
-      // Look up vehicle information
-      setIsLoadingInfo(true);
-      setTimeout(() => {
-        const info = getVehicleInfo(licensePlate);
-        setVehicleInfo(info);
-        setIsLoadingInfo(false);
-        
-        if (info) {
-          toast({
-            title: "Biển số hợp lệ",
-            description: `Đã tìm thấy thông tin xe ${info.vehicleModel} của ${info.ownerName}`,
-            variant: "default"
-          });
-        } else {
-          toast({
-            title: "Biển số không tìm thấy",
-            description: "Không tìm thấy thông tin phương tiện trong hệ thống",
-            variant: "destructive"
-          });
-        }
-      }, 1000);
-      
-      // Check for violations from database
-      setIsLoadingViolation(true);
-      checkViolations(licensePlate).then(result => {
-        setViolationResult(result);
-        setIsLoadingViolation(false);
-        
-        if (result.hasViolations) {
-          toast({
-            title: "⚠️ Phát hiện vi phạm",
-            description: `Phương tiện có ${result.violations.length} vi phạm. Tổng phạt: ${formatCurrency(result.unpaidFines)}`,
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "✓ Không có vi phạm",
-            description: "Phương tiện không có vi phạm giao thông",
-          });
-        }
-      });
-    }
-  }, [licensePlate]);
-
+  const { violations, unpaidViolations, totalFine, hasViolations, loading } = useViolationCheck(licensePlate);
+  
   if (!licensePlate) return null;
   
   return (
@@ -122,24 +72,19 @@ const PlateResult: React.FC<PlateResultProps> = ({
         </div>
         
         <div className="space-y-4 mb-4">
-          <VehicleInfoPanel 
-            vehicleInfo={vehicleInfo} 
-            isLoading={isLoadingInfo} 
-          />
-          
           {/* Violation Check Result */}
           <Card className={`${
-            isLoadingViolation ? 'border-muted' :
-            violationResult?.hasViolations ? 'border-destructive' : 'border-green-500'
+            loading ? 'border-muted' :
+            hasViolations ? 'border-destructive' : 'border-green-500'
           }`}>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                {isLoadingViolation ? (
+                {loading ? (
                   <>
                     <div className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
                     <span>Đang kiểm tra vi phạm...</span>
                   </>
-                ) : violationResult?.hasViolations ? (
+                ) : hasViolations ? (
                   <>
                     <ShieldAlert className="h-5 w-5 text-destructive" />
                     <span className="text-destructive">Phát hiện vi phạm</span>
@@ -153,27 +98,27 @@ const PlateResult: React.FC<PlateResultProps> = ({
               </CardTitle>
             </CardHeader>
             
-            {violationResult && violationResult.hasViolations && (
+            {hasViolations && !loading && (
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <span className="text-muted-foreground">Số vi phạm:</span>
-                    <p className="font-medium">{violationResult.violations.length}</p>
+                    <p className="font-medium">{violations.length}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Tổng phạt:</span>
-                    <p className="font-medium text-destructive">{formatCurrency(violationResult.totalFines)}</p>
+                    <span className="text-muted-foreground">Chưa thanh toán:</span>
+                    <p className="font-medium text-destructive">{unpaidViolations.length}</p>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-muted-foreground">Chưa thanh toán:</span>
-                    <p className="font-medium text-destructive">{formatCurrency(violationResult.unpaidFines)}</p>
+                    <span className="text-muted-foreground">Tổng phạt chưa nộp:</span>
+                    <p className="font-medium text-destructive">{formatCurrency(totalFine)}</p>
                   </div>
                 </div>
                 
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Danh sách vi phạm:</p>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {violationResult.violations.map((v) => (
+                    {violations.map((v) => (
                       <div key={v.id} className="border border-border rounded-md p-2 text-xs">
                         <div className="flex justify-between items-start mb-1">
                           <span className="font-medium">{v.violation_type}</span>
@@ -181,10 +126,14 @@ const PlateResult: React.FC<PlateResultProps> = ({
                             {v.status === 'unpaid' ? 'Chưa thanh toán' : 'Đã thanh toán'}
                           </Badge>
                         </div>
-                        <p className="text-muted-foreground">{v.location}</p>
+                        {v.location && <p className="text-muted-foreground">{v.location}</p>}
                         <div className="flex justify-between mt-1">
-                          <span className="text-muted-foreground">{formatDate(v.violation_date)}</span>
-                          <span className="font-medium">{formatCurrency(Number(v.fine_amount))}</span>
+                          <span className="text-muted-foreground">
+                            {new Date(v.violation_date).toLocaleDateString('vi-VN')}
+                          </span>
+                          {v.fine_amount && (
+                            <span className="font-medium">{formatCurrency(Number(v.fine_amount))}</span>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -193,7 +142,7 @@ const PlateResult: React.FC<PlateResultProps> = ({
               </CardContent>
             )}
             
-            {violationResult && !violationResult.hasViolations && (
+            {!hasViolations && !loading && (
               <CardContent>
                 <p className="text-sm text-muted-foreground">
                   Phương tiện này không có vi phạm giao thông trong hệ thống.
@@ -203,23 +152,13 @@ const PlateResult: React.FC<PlateResultProps> = ({
           </Card>
         </div>
         
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            className="flex-1"
-            onClick={onRetake}
-          >
-            Quét biển số khác
-          </Button>
-          
-          <Button 
-            variant="default" 
-            className="flex-1"
-            disabled={!vehicleInfo}
-          >
-            Xem lịch sử
-          </Button>
-        </div>
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={onRetake}
+        >
+          Quét biển số khác
+        </Button>
       </div>
     </div>
   );
