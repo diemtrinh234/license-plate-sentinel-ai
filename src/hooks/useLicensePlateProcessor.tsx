@@ -6,7 +6,8 @@ import {
   ProcessingStage,
   PlateBox
 } from '@/utils/licensePlateUtils';
-import { recognizePlateWithAI, saveScanToDatabase } from '@/utils/licensePlateAI';
+import { recognizePlate, saveScanToDatabase } from '@/utils/licensePlateAI';
+import { preloadCNNModel } from '@/utils/licensePlateCNN';
 
 interface UseLicensePlateProcessorProps {
   onDetection?: (plate: string, confidence: number) => void;
@@ -51,8 +52,8 @@ export function useLicensePlateProcessor({ onDetection }: UseLicensePlateProcess
     context.drawImage(img, 0, 0, img.width, img.height);
     
     try {
-      // Use AI to recognize license plate
-      const result = await recognizePlateWithAI(canvas);
+      // Use CNN to recognize license plate
+      const result = await recognizePlate(canvas, 'cnn');
       
       if (result.success && result.plate) {
         setLicensePlate(result.plate);
@@ -126,8 +127,8 @@ export function useLicensePlateProcessor({ onDetection }: UseLicensePlateProcess
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
     try {
-      // Use AI to recognize license plate
-      const result = await recognizePlateWithAI(canvas);
+      // Use CNN to recognize license plate
+      const result = await recognizePlate(canvas, 'cnn');
       
       if (result.success && result.plate) {
         setLicensePlate(result.plate);

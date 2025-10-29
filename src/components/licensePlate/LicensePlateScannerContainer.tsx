@@ -16,6 +16,7 @@ import ScanningOverlay from './ScanningOverlay';
 import ProcessingOverlay from './ProcessingOverlay';
 import EmptyState from './EmptyState';
 import ErrorDisplay from './ErrorDisplay';
+import { CNNLoadingIndicator } from './CNNLoadingIndicator';
 
 interface LicensePlateScannerProps {
   onDetection?: (plate: string, confidence: number) => void;
@@ -62,9 +63,11 @@ const LicensePlateScannerContainer: React.FC<LicensePlateScannerProps> = ({ onDe
   }, []);
 
   return (
-    <Card className={`overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
-      <CardContent className="p-0">
-        <div className="relative">
+    <>
+      <CNNLoadingIndicator />
+      <Card className={`overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
+        <CardContent className="p-0">
+          <div className="relative">
           {/* Video element for camera feed */}
           {isScanning && (
             <video
@@ -151,9 +154,10 @@ const LicensePlateScannerContainer: React.FC<LicensePlateScannerProps> = ({ onDe
               onCancelUpload={handleCancelUpload}
             />
           )}
-        </div>
-      </CardContent>
-    </Card>
+          </div>
+        </CardContent>
+      </Card>
+    </>
   );
 };
 

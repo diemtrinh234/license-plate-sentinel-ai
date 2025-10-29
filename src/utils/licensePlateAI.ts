@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { recognizePlateWithCNN } from "./licensePlateCNN";
 
 export interface RecognitionResult {
   success: boolean;
@@ -7,6 +8,8 @@ export interface RecognitionResult {
   confidence: number;
   message?: string;
 }
+
+export type RecognitionMethod = 'cnn' | 'ai';
 
 const scanDataSchema = z.object({
   plateNumber: z.string()
@@ -58,6 +61,19 @@ export async function recognizePlateWithAI(
       confidence: 0,
       message: error instanceof Error ? error.message : 'Unknown error'
     };
+  }
+}
+
+export async function recognizePlate(
+  canvas: HTMLCanvasElement,
+  method: RecognitionMethod = 'cnn'
+): Promise<RecognitionResult> {
+  console.log(`Using recognition method: ${method}`);
+  
+  if (method === 'cnn') {
+    return recognizePlateWithCNN(canvas);
+  } else {
+    return recognizePlateWithAI(canvas);
   }
 }
 
