@@ -1,6 +1,6 @@
 
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { 
   Card,
   CardContent,
@@ -68,6 +68,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const Auth = () => {
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState("login");
   const [isLoading, setIsLoading] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
@@ -75,6 +77,26 @@ const Auth = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { login, register } = useAuth();
+
+  // Handle URL params for tab switching and messages
+  useEffect(() => {
+    const mode = searchParams.get("mode");
+    const message = searchParams.get("message");
+    
+    if (mode === "register") {
+      setActiveTab("register");
+    } else if (mode === "login") {
+      setActiveTab("login");
+    }
+    
+    if (message === "verify") {
+      toast({
+        title: "Xác nhận đăng ký",
+        description: "Vui lòng đăng nhập để xác nhận và kích hoạt tài khoản của bạn.",
+        duration: 5000,
+      });
+    }
+  }, [searchParams, toast]);
 
   // Login form
   const loginForm = useForm<LoginFormValues>({
@@ -146,11 +168,15 @@ const Auth = () => {
         return;
       }
       
+      // Success - redirect to login tab with verification message
+      registerForm.reset();
       toast({
         title: "Đăng ký thành công",
-        description: "Tài khoản của bạn đã được tạo!",
+        description: "Vui lòng đăng nhập để xác nhận và kích hoạt tài khoản.",
       });
-      navigate("/dashboard");
+      
+      // Switch to login tab and show verification message
+      navigate("/auth?mode=login&message=verify");
     } catch (error) {
       toast({
         title: "Lỗi",
@@ -171,7 +197,7 @@ const Auth = () => {
             <CardDescription>Đăng nhập để truy cập bảng điều khiển</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="login">Đăng nhập</TabsTrigger>
                 <TabsTrigger value="register">Đăng ký</TabsTrigger>
