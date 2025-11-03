@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { translations } from '@/translations/translations';
 
 type Language = 'vi' | 'en';
 
@@ -22,7 +23,6 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const t = (key: string): string => {
-    const translations = require('@/translations/translations').translations;
     const keys = key.split('.');
     let value: any = translations[language];
     
