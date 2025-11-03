@@ -10,15 +10,46 @@ import {
   Map, 
   Clock,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  Languages
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import heroImage from "@/assets/its-hero-dashboard.jpg";
 import smartCamera from "@/assets/smart-camera.jpg";
 import trafficMap from "@/assets/traffic-map.jpg";
 
 const Landing = () => {
+  const { language, setLanguage, t } = useLanguage();
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95">
+      {/* Language Switcher - Fixed position */}
+      <div className="fixed top-6 right-6 z-50">
+        <div className="flex items-center gap-2 bg-card/80 backdrop-blur-sm border border-border rounded-full px-4 py-2 shadow-lg">
+          <Languages className="h-4 w-4 text-muted-foreground" />
+          <button
+            onClick={() => setLanguage('vi')}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+              language === 'vi'
+                ? 'bg-accent text-accent-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            VI
+          </button>
+          <button
+            onClick={() => setLanguage('en')}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+              language === 'en'
+                ? 'bg-accent text-accent-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            EN
+          </button>
+        </div>
+      </div>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         {/* Background gradient overlay */}
@@ -31,21 +62,20 @@ const Landing = () => {
             <div className="space-y-8 z-10">
               <div className="inline-block px-4 py-2 bg-accent/10 border border-accent/30 rounded-full">
                 <span className="text-accent font-semibold text-sm">
-                  🚀 Công nghệ ITS Thế hệ mới
+                  {t('landing.badge')}
                 </span>
               </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                <span className="block text-foreground">Kiểm Soát Giao Thông.</span>
-                <span className="block text-foreground">Tối Ưu Hóa Tuyến Đường.</span>
+                <span className="block text-foreground">{t('landing.hero.title1')}</span>
+                <span className="block text-foreground">{t('landing.hero.title2')}</span>
                 <span className="block bg-gradient-to-r from-[hsl(var(--its-primary))] to-[hsl(var(--its-accent))] bg-clip-text text-transparent">
-                  Nâng Cao An Toàn.
+                  {t('landing.hero.title3')}
                 </span>
               </h1>
               
               <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
-                Giải pháp theo dõi, phân tích và điều khiển giao thông thời gian thực, 
-                giúp giảm ùn tắc và bảo vệ an toàn cho mọi người tham gia giao thông.
+                {t('landing.hero.description')}
               </p>
               
               {/* CTA Buttons */}
@@ -55,7 +85,7 @@ const Landing = () => {
                     size="lg" 
                     className="w-full sm:w-auto bg-[hsl(var(--its-primary))] hover:bg-[hsl(var(--its-primary-dark))] text-primary-foreground shadow-[0_0_40px_hsl(var(--its-accent)/0.3)] transition-all duration-300 hover:shadow-[0_0_60px_hsl(var(--its-accent)/0.5)]"
                   >
-                    Yêu Cầu Demo
+                    {t('landing.hero.ctaPrimary')}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
@@ -65,7 +95,7 @@ const Landing = () => {
                     variant="outline"
                     className="w-full sm:w-auto border-accent/50 text-accent hover:bg-accent/10 hover:border-accent"
                   >
-                    Xem Giải Pháp Chi Tiết
+                    {t('landing.hero.ctaSecondary')}
                   </Button>
                 </Link>
               </div>
@@ -74,11 +104,11 @@ const Landing = () => {
               <div className="flex flex-wrap gap-6 pt-8 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-accent" />
-                  <span>Triển khai 15+ Tỉnh/Thành phố</span>
+                  <span>{t('landing.hero.trust1')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-accent" />
-                  <span>1M+ Vi phạm phát hiện</span>
+                  <span>{t('landing.hero.trust2')}</span>
                 </div>
               </div>
             </div>
@@ -98,15 +128,15 @@ const Landing = () => {
                 <div className="absolute bottom-6 left-6 right-6 grid grid-cols-3 gap-4">
                   <Card className="p-4 bg-card/90 backdrop-blur-sm border-accent/30">
                     <div className="text-2xl font-bold text-accent">98%</div>
-                    <div className="text-xs text-muted-foreground">Độ chính xác</div>
+                    <div className="text-xs text-muted-foreground">{t('landing.hero.stats.accuracy')}</div>
                   </Card>
                   <Card className="p-4 bg-card/90 backdrop-blur-sm border-accent/30">
                     <div className="text-2xl font-bold text-accent">24/7</div>
-                    <div className="text-xs text-muted-foreground">Giám sát</div>
+                    <div className="text-xs text-muted-foreground">{t('landing.hero.stats.monitoring')}</div>
                   </Card>
                   <Card className="p-4 bg-card/90 backdrop-blur-sm border-accent/30">
                     <div className="text-2xl font-bold text-accent">-30%</div>
-                    <div className="text-xs text-muted-foreground">Ùn tắc</div>
+                    <div className="text-xs text-muted-foreground">{t('landing.hero.stats.reduction')}</div>
                   </Card>
                 </div>
               </div>
@@ -124,10 +154,10 @@ const Landing = () => {
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Lợi Ích & Tính Năng Nổi Bật
+              {t('landing.benefits.title')}
             </h2>
             <p className="text-lg text-muted-foreground">
-              Giải pháp toàn diện giúp cơ quan quản lý kiểm soát giao thông hiệu quả hơn
+              {t('landing.benefits.subtitle')}
             </p>
           </div>
           
@@ -137,10 +167,9 @@ const Landing = () => {
               <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
                 <TrendingDown className="h-7 w-7 text-accent" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Giảm Ùn Tắc 30%</h3>
+              <h3 className="text-xl font-bold mb-3">{t('landing.benefits.benefit1.title')}</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Phân tích luồng giao thông thời gian thực và tối ưu hóa tín hiệu đèn giao thông thông minh, 
-                giảm thiểu thời gian chờ đợi trung bình 30%.
+                {t('landing.benefits.benefit1.description')}
               </p>
             </Card>
             
@@ -149,10 +178,9 @@ const Landing = () => {
               <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
                 <Camera className="h-7 w-7 text-accent" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Phát Hiện Vi Phạm Tự Động</h3>
+              <h3 className="text-xl font-bold mb-3">{t('landing.benefits.benefit2.title')}</h3>
               <p className="text-muted-foreground leading-relaxed">
-                AI nhận diện biển số xe và phát hiện vi phạm tự động với độ chính xác 98%, 
-                xử phạt nhanh chóng và công bằng.
+                {t('landing.benefits.benefit2.description')}
               </p>
             </Card>
             
@@ -161,10 +189,9 @@ const Landing = () => {
               <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
                 <BarChart3 className="h-7 w-7 text-accent" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Phân Tích Dữ Liệu Big Data</h3>
+              <h3 className="text-xl font-bold mb-3">{t('landing.benefits.benefit3.title')}</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Xử lý hàng triệu điểm dữ liệu mỗi ngày, cung cấp báo cáo thống kê chi tiết 
-                và dự báo xu hướng giao thông.
+                {t('landing.benefits.benefit3.description')}
               </p>
             </Card>
             
@@ -173,10 +200,9 @@ const Landing = () => {
               <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
                 <Shield className="h-7 w-7 text-accent" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Nâng Cao An Toàn</h3>
+              <h3 className="text-xl font-bold mb-3">{t('landing.benefits.benefit4.title')}</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Phát hiện sớm tình huống nguy hiểm, cảnh báo người tham gia giao thông 
-                và hỗ trợ lực lượng cứu hộ phản ứng nhanh.
+                {t('landing.benefits.benefit4.description')}
               </p>
             </Card>
             
@@ -185,10 +211,9 @@ const Landing = () => {
               <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
                 <Map className="h-7 w-7 text-accent" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Bản Đồ Thời Gian Thực</h3>
+              <h3 className="text-xl font-bold mb-3">{t('landing.benefits.benefit5.title')}</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Hiển thị trực quan tình trạng giao thông toàn thành phố trên bản đồ số, 
-                giúp điều phối nguồn lực hiệu quả.
+                {t('landing.benefits.benefit5.description')}
               </p>
             </Card>
             
@@ -197,10 +222,9 @@ const Landing = () => {
               <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
                 <Clock className="h-7 w-7 text-accent" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Giám Sát 24/7</h3>
+              <h3 className="text-xl font-bold mb-3">{t('landing.benefits.benefit6.title')}</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Hệ thống hoạt động liên tục không ngừng nghỉ, đảm bảo kiểm soát giao thông 
-                mọi lúc mọi nơi, kể cả ban đêm.
+                {t('landing.benefits.benefit6.description')}
               </p>
             </Card>
           </div>
@@ -220,27 +244,26 @@ const Landing = () => {
             </div>
             <div className="order-1 lg:order-2 space-y-6">
               <div className="inline-block px-4 py-2 bg-accent/10 border border-accent/30 rounded-full">
-                <span className="text-accent font-semibold text-sm">Camera AI</span>
+                <span className="text-accent font-semibold text-sm">{t('landing.features.camera.badge')}</span>
               </div>
               <h3 className="text-3xl font-bold">
-                Hệ Thống Camera Thông Minh
+                {t('landing.features.camera.title')}
               </h3>
               <p className="text-lg text-muted-foreground">
-                Camera AI tích hợp công nghệ nhận diện tiên tiến, tự động phát hiện biển số xe, 
-                phân loại phương tiện và ghi nhận vi phạm giao thông 24/7.
+                {t('landing.features.camera.description')}
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-6 w-6 text-accent shrink-0 mt-0.5" />
-                  <span>Nhận diện biển số xe với độ chính xác 98%</span>
+                  <span>{t('landing.features.camera.feature1')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-6 w-6 text-accent shrink-0 mt-0.5" />
-                  <span>Phát hiện tự động các vi phạm: vượt đèn đỏ, quá tốc độ, đi sai làn</span>
+                  <span>{t('landing.features.camera.feature2')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-6 w-6 text-accent shrink-0 mt-0.5" />
-                  <span>Hoạt động ổn định trong mọi điều kiện thời tiết và ánh sáng</span>
+                  <span>{t('landing.features.camera.feature3')}</span>
                 </li>
               </ul>
             </div>
@@ -249,27 +272,26 @@ const Landing = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <div className="inline-block px-4 py-2 bg-accent/10 border border-accent/30 rounded-full">
-                <span className="text-accent font-semibold text-sm">Bản Đồ Số</span>
+                <span className="text-accent font-semibold text-sm">{t('landing.features.map.badge')}</span>
               </div>
               <h3 className="text-3xl font-bold">
-                Trung Tâm Điều Hành Thông Minh
+                {t('landing.features.map.title')}
               </h3>
               <p className="text-lg text-muted-foreground">
-                Bản đồ số hiển thị toàn cảnh giao thông thành phố với dữ liệu thời gian thực, 
-                hỗ trợ ra quyết định nhanh chóng và chính xác.
+                {t('landing.features.map.description')}
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-6 w-6 text-accent shrink-0 mt-0.5" />
-                  <span>Hiển thị trực quan mật độ giao thông theo màu sắc</span>
+                  <span>{t('landing.features.map.feature1')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-6 w-6 text-accent shrink-0 mt-0.5" />
-                  <span>Cảnh báo khu vực ùn tắc và sự cố giao thông ngay lập tức</span>
+                  <span>{t('landing.features.map.feature2')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="h-6 w-6 text-accent shrink-0 mt-0.5" />
-                  <span>Tích hợp dữ liệu từ nhiều nguồn: camera, cảm biến, GPS</span>
+                  <span>{t('landing.features.map.feature3')}</span>
                 </li>
               </ul>
             </div>
@@ -290,11 +312,10 @@ const Landing = () => {
         <div className="container mx-auto px-4 relative z-10">
           <Card className="max-w-4xl mx-auto p-12 bg-card/80 backdrop-blur-sm border-accent/30 text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Sẵn sàng trải nghiệm ITS?
+              {t('landing.cta.title')}
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Đăng ký ngay để được tư vấn và trải nghiệm demo miễn phí hệ thống 
-              Giám sát Giao thông Thông minh của chúng tôi.
+              {t('landing.cta.description')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/auth?mode=register">
@@ -302,7 +323,7 @@ const Landing = () => {
                   size="lg" 
                   className="bg-[hsl(var(--its-primary))] hover:bg-[hsl(var(--its-primary-dark))] text-primary-foreground shadow-[0_0_40px_hsl(var(--its-accent)/0.3)] transition-all duration-300 hover:shadow-[0_0_60px_hsl(var(--its-accent)/0.5)]"
                 >
-                  Đăng Ký Ngay
+                  {t('landing.cta.register')}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
@@ -312,7 +333,7 @@ const Landing = () => {
                   variant="outline"
                   className="border-accent/50 text-accent hover:bg-accent/10 hover:border-accent"
                 >
-                  Đã có tài khoản? Đăng nhập
+                  {t('landing.cta.login')}
                 </Button>
               </Link>
             </div>
@@ -324,8 +345,8 @@ const Landing = () => {
       <footer className="py-12 border-t border-border">
         <div className="container mx-auto px-4">
           <div className="text-center text-muted-foreground">
-            <p className="mb-2">© 2024 Hệ Thống Giám Sát Giao Thông Thông Minh (ITS)</p>
-            <p className="text-sm">Giải pháp công nghệ cho giao thông an toàn và hiệu quả</p>
+            <p className="mb-2">{t('landing.footer.copyright')}</p>
+            <p className="text-sm">{t('landing.footer.tagline')}</p>
           </div>
         </div>
       </footer>
