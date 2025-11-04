@@ -23,6 +23,7 @@ import ViolationDetails from "@/components/ViolationDetails";
 import ViolationHistory from "@/components/ViolationHistory";
 import DaNangMap from "@/components/DaNangMap";
 import PlateChecker from "@/components/PlateChecker";
+import { normalizePlate } from "@/utils/licensePlateValidation";
 
 // Define vehicle data type
 interface Vehicle {
@@ -132,20 +133,7 @@ const Dashboard = () => {
     return matchesSearch && vehicle.status === filterStatus;
   });
 
-  // Normalize license plate format
-  const normalizePlate = (plate: string): string => {
-    let normalized = plate.trim().toUpperCase();
-    
-    // If it doesn't contain a dash, try to format it
-    if (!normalized.includes('-') && normalized.length >= 5) {
-      const province = normalized.substring(0, 3);
-      const numbers = normalized.substring(3);
-      normalized = `${province}-${numbers}`;
-    }
-    
-    return normalized;
-  };
-
+  // Normalize license plate format (moved to imported function)
   // Add new license plate from scanner
   const handleAddNewPlate = (newPlate: string) => {
     // Normalize the plate format

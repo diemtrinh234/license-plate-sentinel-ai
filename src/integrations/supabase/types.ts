@@ -50,6 +50,27 @@ export type Database = {
         }
         Relationships: []
       }
+      license_plate_search_history: {
+        Row: {
+          id: string
+          plate_number: string
+          searched_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          plate_number: string
+          searched_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          plate_number?: string
+          searched_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       violations: {
         Row: {
           created_at: string
