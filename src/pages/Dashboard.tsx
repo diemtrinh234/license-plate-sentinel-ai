@@ -132,8 +132,25 @@ const Dashboard = () => {
     return matchesSearch && vehicle.status === filterStatus;
   });
 
+  // Normalize license plate format
+  const normalizePlate = (plate: string): string => {
+    let normalized = plate.trim().toUpperCase();
+    
+    // If it doesn't contain a dash, try to format it
+    if (!normalized.includes('-') && normalized.length >= 5) {
+      const province = normalized.substring(0, 3);
+      const numbers = normalized.substring(3);
+      normalized = `${province}-${numbers}`;
+    }
+    
+    return normalized;
+  };
+
   // Add new license plate from scanner
   const handleAddNewPlate = (newPlate: string) => {
+    // Normalize the plate format
+    const formattedPlate = normalizePlate(newPlate);
+    
     const randomLocations = [
       "Nguyen Van Linh - Hung Vuong Intersection, Da Nang",
       "Dragon Bridge, Da Nang",
@@ -153,7 +170,7 @@ const Dashboard = () => {
     
     const newVehicle: Vehicle = {
       id: vehicles.length + 1,
-      plate: newPlate,
+      plate: formattedPlate,
       time,
       date,
       location,
@@ -164,12 +181,12 @@ const Dashboard = () => {
     setVehicles([newVehicle, ...vehicles]);
     
     // Update selected plate for violation check
-    setSelectedPlate(newPlate);
+    setSelectedPlate(formattedPlate);
     
     // Show toast notification
     toast({
       title: "New License Plate Detected",
-      description: `Plate ${newPlate} detected at ${location}`,
+      description: `Plate ${formattedPlate} detected at ${location}`,
       variant: status === "violation" ? "destructive" : "default",
     });
     
@@ -191,7 +208,8 @@ const Dashboard = () => {
 
   // Select plate for violation history check
   const handleSelectPlate = (plate: string) => {
-    setSelectedPlate(plate);
+    const formattedPlate = normalizePlate(plate);
+    setSelectedPlate(formattedPlate);
   };
   
   // Handle notifications
