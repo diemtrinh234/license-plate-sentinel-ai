@@ -28,7 +28,9 @@ export function useSearchHistory() {
       if (error) throw error;
       setHistory(data || []);
     } catch (error) {
-      console.error('Error fetching search history:', error);
+      if (import.meta.env.DEV) {
+        console.error('[DEV] Error fetching search history:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -58,7 +60,9 @@ export function useSearchHistory() {
       // Refresh history
       await fetchHistory();
     } catch (error) {
-      console.error('Error adding to search history:', error);
+      if (import.meta.env.DEV) {
+        console.error('[DEV] Error adding to search history:', error);
+      }
     }
   };
 
@@ -75,7 +79,9 @@ export function useSearchHistory() {
       if (error) throw error;
       setHistory([]);
     } catch (error) {
-      console.error('Error clearing search history:', error);
+      if (import.meta.env.DEV) {
+        console.error('[DEV] Error clearing search history:', error);
+      }
     }
   };
 

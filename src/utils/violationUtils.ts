@@ -28,7 +28,9 @@ export async function checkViolations(plateNumber: string): Promise<ViolationChe
       .order('violation_date', { ascending: false });
 
     if (error) {
-      console.error('Error fetching violations:', error);
+      if (import.meta.env.DEV) {
+        console.error('[DEV] Error fetching violations:', error);
+      }
       return {
         hasViolations: false,
         violations: [],
@@ -50,7 +52,9 @@ export async function checkViolations(plateNumber: string): Promise<ViolationChe
       unpaidFines
     };
   } catch (error) {
-    console.error('Exception checking violations:', error);
+    if (import.meta.env.DEV) {
+      console.error('[DEV] Exception checking violations:', error);
+    }
     return {
       hasViolations: false,
       violations: [],

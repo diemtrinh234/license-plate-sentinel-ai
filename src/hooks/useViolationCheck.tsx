@@ -38,7 +38,9 @@ export function useViolationCheck(plateNumber: string | null) {
 
         setViolations(data || []);
       } catch (err) {
-        console.error('Error fetching violations:', err);
+        if (import.meta.env.DEV) {
+          console.error('[DEV] Error fetching violations:', err);
+        }
         setError(err instanceof Error ? err.message : 'Không thể tải thông tin vi phạm');
       } finally {
         setLoading(false);
